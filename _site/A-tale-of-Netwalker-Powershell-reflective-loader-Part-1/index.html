@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>A tale of Netwalker Powershell reflective loader - Part 1 | ./$bash blog</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="A tale of Netwalker Powershell reflective loader - Part 1" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Hi! I lately started delving into powershell loaders and came across a really intriguing powershell loader for “Netwalker ransomware” [1], performing fileless attack [2] where ransomware binary directly loads and executes malicious payload in memory without actually storing it on disk leaving no trace of execution. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection." />
+<meta property="og:description" content="Hi! I lately started delving into powershell loaders and came across a really intriguing powershell loader for “Netwalker ransomware” [1], performing fileless attack [2] where ransomware binary directly loads and executes malicious payload in memory without actually storing it on disk leaving no trace of execution. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection." />
+<meta property="og:site_name" content="./$bash blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-12-21T00:00:00+05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="A tale of Netwalker Powershell reflective loader - Part 1" />
+<script type="application/ld+json">
+{"headline":"A tale of Netwalker Powershell reflective loader - Part 1","dateModified":"2020-12-21T00:00:00+05:00","datePublished":"2020-12-21T00:00:00+05:00","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"/A-tale-of-Netwalker-Powershell-reflective-loader-Part-1/"},"url":"/A-tale-of-Netwalker-Powershell-reflective-loader-Part-1/","description":"Hi! I lately started delving into powershell loaders and came across a really intriguing powershell loader for “Netwalker ransomware” [1], performing fileless attack [2] where ransomware binary directly loads and executes malicious payload in memory without actually storing it on disk leaving no trace of execution. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="./$bash blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">./$bash blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav>
+    </div></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">A tale of Netwalker Powershell reflective loader - Part 1</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-12-21T00:00:00+05:00" itemprop="datePublished">Dec 21, 2020
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Hi! I lately started delving into powershell loaders and came across a really intriguing powershell loader for “Netwalker ransomware” <a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">[1]</a>, performing fileless attack <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">[2]</a> where ransomware binary directly loads and executes malicious payload in memory without actually storing it on disk leaving no trace of execution. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
+
+<p>SHA-256 of the sample being analyzed:  <a href="https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/">f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be</a></p>
+
+<hr />
+<p>Prior knowledge required:</p>
+
+<ul>
+  <li>Basic Powershell understanding</li>
+  <li>using .NET reflection to access Windows API in PowerShell</li>
+  <li>Windows APIs for Process/Dll injection</li>
+</ul>
+
+<hr />
+
+<p>This is around ~5 MBs of powershell script using three layers of encoding, encryption and obfuscation respectively to hide ransomware dll and supporting powershell commands for reflective Dll injection. The uppermost layer executes very long base64 encoded command (screenshot covers only a small portion of this command)</p>
+
+<p><img src="/assets/images/psloader/layer1.png" alt="image" class="img-responsive" /></p>
+
+<h1>Processing Base64 encoded layer 1</h1>
+
+<p>In order to get decoded output from initial script, I shall run powershell script into my VM’s Powershell ISE but as the Invoke-Expression cmdlet will process base64-encoded payload and execute the ransomware therefore, I’ll modify the script by replacing this comdlet with a variable to store result of base64 decoded command and dump output in a file as shown in the figure below</p>
+
+<p><img src="/assets/images/psloader/layer1processing.png" alt="image" class="img-responsive" /></p>
+
+<h1>Processing Encrypted layer 2</h1>
+
+<p>base64 decoded second layer once again contains a very long bytearray which is processed in two steps</p>
+
+<p><img src="/assets/images/psloader/base64decoded_layer2.png" alt="image" class="img-responsive" /></p>
+
+<p>1) bytearray contents are decrypted in a for loop with 1 byte hardcoded xor key</p>
+
+<p><img src="/assets/images/psloader/layer2_xor.png" alt="image" class="img-responsive" /></p>
+
+<p>2) decrypted contents are stored as ASCII string in another variable in order to be able to create scriptblock for decrypted contents and execute it using Invoke-Command cmdlet</p>
+
+<p><img src="/assets/images/psloader/layer2_scriptblock.png" alt="image" class="img-responsive" /></p>
+
+<p>I shall also modify second layer to get decrypted layer three contents and dump result into another output file as shown in the figure below</p>
+
+<p><img src="/assets/images/psloader/layer2processing.png" alt="image" class="img-responsive" /></p>
+
+<p>decryptedlayer3.ps1 now contains the obfuscated layer three powershell script embedding ransomware dlls in bytearrays and other commands to process the malicious payload</p>
+
+<p><img src="/assets/images/psloader/dlls.png" alt="image" class="img-responsive" /></p>
+
+<h1>Processing Obfuscated layer 3</h1>
+
+<p>Layer three powershell loader contains obfuscated variable and routine names. It is required to perform following steps to load embedded executable into memory</p>
+
+<ul>
+  <li>define variables to invoke in-memory Windows API function calls without compilation</li>
+  <li>define routines to load dll without using Windows loader</li>
+  <li>detect environment</li>
+  <li>get PID of a legitimate process from a list of running processes and inject payload via custom loader</li>
+  <li>delete shadow copies</li>
+</ul>
+
+<p>First off, it defines required variables and routines:</p>
+
+<p><b> to invoke in-memory Windows API function calls without compilation,</b> a set of variables define C# code to declare structs and enums for memory manipulation</p>
+
+<p><img src="/assets/images/psloader/C#code.png" alt="image" class="img-responsive" /></p>
+
+<p>and to invoke kernell32.dll APIs using wrapper .Net methods available in powershell</p>
+
+<p><img src="/assets/images/psloader/DLLImports.png" alt="image" class="img-responsive" /></p>
+
+<p>final command in this case will let us instantiate objects by making Microsoft .Net core classes available in our powershell session and ensure ransomware’s true memory residence through reflection.</p>
+
+<p>and following set of routines <b>correctly compute required memory addresses and relocations</b> by mapping integer data types (signed integers to Unsigned integers and vice versa)</p>
+
+<p><img src="/assets/images/psloader/conversions.png" alt="image" class="img-responsive" /></p>
+
+<p>Finally it defines a bunch of routines to process and load embedded malicious payload.</p>
+
+<p>Script starts its execution by detecting processor’s architecture whether it is x86 or amd64 to prepare 32-bit or 64-bit dll accordingly using following if-else block</p>
+
+<figure class="highlight"><pre><code class="language-powershell" data-lang="powershell"><span class="p">[</span><span class="n">byte</span><span class="p">[]]</span><span class="nv">$EbihwfodUZMKtNCBx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$ptFvKdtq</span><span class="w">
+</span><span class="nv">$aukhgaZFiPJBarSpJc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">$false</span><span class="w">
+</span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">Get-WmiObject</span><span class="w"> </span><span class="nx">Win32_processor</span><span class="p">)</span><span class="o">.</span><span class="nf">AddressWidth</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="mi">64</span><span class="w"> </span><span class="p">)</span><span class="w">
+</span><span class="p">{</span><span class="w">
+ </span><span class="p">[</span><span class="n">byte</span><span class="p">[]]</span><span class="nv">$EbihwfodUZMKtNCBx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$GxwyKvgEkr</span><span class="w">
+ </span><span class="nv">$aukhgaZFiPJBarSpJc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">$true</span><span class="w">    
+ </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">PROCESSOR_ARCHITECTURE</span><span class="w"> </span><span class="o">-ne</span><span class="w"> </span><span class="s1">'amd64'</span><span class="w"> </span><span class="p">)</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="nv">$myInvocation</span><span class="o">.</span><span class="nf">Line</span><span class="p">)</span><span class="w"> 
+         </span><span class="p">{</span><span class="w">
+            </span><span class="o">&amp;</span><span class="s2">"</span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">WINDIR</span><span class="s2">\sysnative\windowspowershell\v1.0\powershell.exe"</span><span class="w"> </span><span class="nt">-ExecutionPolicy</span><span class="w"> </span><span class="n">ByPass</span><span class="w"> </span><span class="nt">-NoLogo</span><span class="w"> </span><span class="nt">-NonInteractive</span><span class="w"> </span><span class="nt">-NoProfile</span><span class="w"> </span><span class="nt">-NoExit</span><span class="w"> </span><span class="nv">$myInvocation</span><span class="o">.</span><span class="nf">Line</span><span class="w">
+         </span><span class="p">}</span><span class="w">
+      </span><span class="kr">else</span><span class="w">
+         </span><span class="p">{</span><span class="w">
+            </span><span class="o">&amp;</span><span class="s2">"</span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">WINDIR</span><span class="s2">\sysnative\windowspowershell\v1.0\powershell.exe"</span><span class="w"> </span><span class="nt">-ExecutionPolicy</span><span class="w"> </span><span class="n">ByPass</span><span class="w"> </span><span class="nt">-NoLogo</span><span class="w"> </span><span class="nt">-NonInteractive</span><span class="w"> </span><span class="nt">-NoProfile</span><span class="w"> </span><span class="nt">-NoExit</span><span class="w"> </span><span class="nt">-file</span><span class="w"> </span><span class="s2">"</span><span class="si">$(</span><span class="nv">$myInvocation</span><span class="o">.</span><span class="nf">InvocationName</span><span class="si">)</span><span class="s2">"</span><span class="w"> </span><span class="bp">$args</span><span class="w">
+         </span><span class="p">}</span><span class="w">
+      </span><span class="kr">exit</span><span class="w"> </span><span class="nv">$lastexitcode</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>later it allocates memory in current process’s address space and starts writing dll on the allocated memory using for loop</p>
+
+<figure class="highlight"><pre><code class="language-powershell" data-lang="powershell"><span class="kr">for</span><span class="p">(</span><span class="w"> </span><span class="nv">$dxQpkwU</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="nv">$dxQpkwU</span><span class="w"> </span><span class="o">-lt</span><span class="w"> </span><span class="nv">$TKgfkdkQrLMAN</span><span class="o">.</span><span class="nf">KGcnFrQVhkckQriBC</span><span class="o">.</span><span class="nf">nKkeCknfm</span><span class="p">;</span><span class="w"> </span><span class="nv">$dxQpkwU</span><span class="o">++</span><span class="w"> </span><span class="p">)</span><span class="w">
+</span><span class="p">{</span><span class="w">
+    </span><span class="nv">$PdWhwldJHtQhtsMJe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">System.Runtime.InteropServices.Marshal</span><span class="p">]::</span><span class="n">PtrToStructure</span><span class="p">(</span><span class="w"> </span><span class="nv">$lItUIbvCvHxzMmrKtX</span><span class="p">,[</span><span class="n">Type</span><span class="p">][</span><span class="n">Fvh.wTEWKRjOqBX</span><span class="p">]</span><span class="w"> </span><span class="p">)</span><span class="w">
+    </span><span class="nv">$rZKYDiOJE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">RBeMnMHvnbNEob</span><span class="w"> </span><span class="nv">$eIr</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="w"> </span><span class="n">ULhnbcyXERLvVtGXUp</span><span class="w"> </span><span class="nv">$PdWhwldJHtQhtsMJe</span><span class="o">.</span><span class="nf">sUtYsMhA</span><span class="w"> </span><span class="p">)</span><span class="w">
+    </span><span class="nv">$MxyiIYGMhxakrDbKyjL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RBeMnMHvnbNEob</span><span class="w"> </span><span class="nv">$upEcLTMCGhc</span><span class="w"> </span><span class="err">$</span><span class="p">(</span><span class="w"> </span><span class="n">ULhnbcyXERLvVtGXUp</span><span class="w"> </span><span class="nv">$PdWhwldJHtQhtsMJe</span><span class="o">.</span><span class="nf">cymIspbCOaY</span><span class="w"> </span><span class="p">)</span><span class="w">
+    </span><span class="nv">$mofiZSsnxylxNuA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">$AaauDVCQMlKUXx</span><span class="p">::</span><span class="n">PMUN</span><span class="p">(</span><span class="w"> </span><span class="nv">$VxxHhZYpWSgsPvKNuDx</span><span class="p">,</span><span class="w"> </span><span class="nv">$MxyiIYGMhxakrDbKyjL</span><span class="p">,</span><span class="w"> </span><span class="nv">$rZKYDiOJE</span><span class="p">,</span><span class="w"> </span><span class="nv">$PdWhwldJHtQhtsMJe</span><span class="o">.</span><span class="nf">mkvugoDzrJgTSSJp</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">ref</span><span class="p">]([</span><span class="n">UInt32</span><span class="p">]</span><span class="mi">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+   
+    </span><span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="nv">$mofiZSsnxylxNuA</span><span class="w"> </span><span class="o">-eq</span><span class="w"> </span><span class="bp">$false</span><span class="w"> </span><span class="p">)</span><span class="w">
+       </span><span class="p">{</span><span class="w">
+         </span><span class="kr">return</span><span class="w">
+       </span><span class="p">}</span><span class="w">
+    </span><span class="nv">$lItUIbvCvHxzMmrKtX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RBeMnMHvnbNEob</span><span class="w"> </span><span class="nv">$lItUIbvCvHxzMmrKtX</span><span class="w"> </span><span class="err">$</span><span class="p">([</span><span class="n">System.Runtime.InteropServices.Marshal</span><span class="p">]::</span><span class="n">SizeOf</span><span class="p">([</span><span class="n">Type</span><span class="p">][</span><span class="n">Fvh.wTEWKRjOqBX</span><span class="p">]))</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>snapshot of object containig dll that gets written into current process’s memory</p>
+
+<p><img src="/assets/images/psloader/dll_struct.png" alt="image" class="img-responsive" /></p>
+
+<p>after that it calls following routine with certain parameters to inject payload into a legitimate process which is ‘explorer.exe’ in this case along with memory location pointer for buffer containg Dll and size of the buffer containing dll</p>
+
+<p><img src="/assets/images/psloader/call_explorer.png" alt="image" class="img-responsive" /></p>
+
+<p>this routine finds PID of explorer.exe form a list of running processes and passes obtained PID to final routine</p>
+
+<p><img src="/assets/images/psloader/get_explorer_pid.png" alt="image" class="img-responsive" /></p>
+
+<p>which first reflectively injects ransomware dll into explorer.exe and then executes it by creating a thread that runs in the virtual address space of Explorer.exe process</p>
+
+<p><img src="/assets/images/psloader/inject.png" alt="image" class="img-responsive" /></p>
+
+<p>and in the end deletes shadow copies of the data being held on the system at that particular time to completely eliminate any possibility of recovering it and performs required memory cleanup using following set of commands</p>
+
+<p><img src="/assets/images/psloader/delete_shadowcopy.png" alt="image" class="img-responsive" /></p>
+
+<p>as soon as script exits FE026B-Readme.txt window appears on the system with ransom message and all encrypted files with fe026b extension are no longer accessible</p>
+
+<p><img src="/assets/images/psloader/message.png" alt="image" class="img-responsive" /></p>
+
+<p><strong><em>Note: </em></strong><b>Ransomware dll being injected can be dumped into a binary file having SHA-256 <a href="https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection">302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b</a> hash but it can be seen that first two bytes in this case contain wrong hex value 0xADDE</b></p>
+
+<p><img src="/assets/images/psloader/dumped.png" alt="image" class="img-responsive" /></p>
+
+<p>replacng first two bytes <b>0xADDE</b> with <b>0x4D5A</b> in MZ header would result in Netwalker ransomware with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
+
+<p>and that’s it. I hope you liked this writeup on disecting the powershell reflective loader.</p>
+
+<p>Best regards,</p>
+
+<p>./$bash.</p>
+
+<p><strong>Sources:</strong></p>
+<ol>
+  <li>https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/</li>
+  <li>https://any.run/report/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/ca44ad38-0e46-455e-8cfd-42fb53d41a1d</li>
+</ol>
+
+  </div><a class="u-url" href="/A-tale-of-Netwalker-Powershell-reflective-loader-Part-1/" hidden></a>
+</article>
+
+      </div>
+    </main>
+
+    
+
+  </body>
+
+</html>
