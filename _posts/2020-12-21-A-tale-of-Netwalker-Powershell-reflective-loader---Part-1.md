@@ -67,7 +67,7 @@ First off, it defines required variables and routines:
 
 <b> to invoke in-memory Windows API function calls without compilation,</b> C# code to declare structs and enums for memory manipulation is defined inside a variable as shown below
 
-![image](/assets/images/psloader/C#code.png){:class="img-responsive"}
+![image](/assets/images/psloader/Csharpcode.png){:class="img-responsive"}
 
 and to invoke kernell32.dll APIs using wrapper .Net methods available in powershell
 
@@ -75,11 +75,11 @@ and to invoke kernell32.dll APIs using wrapper .Net methods available in powersh
 
 final command in this case will let us instantiate objects by making Microsoft .Net core classes available in our powershell session and ensure ransomware's true memory residence through reflection. 
 
-Following set of routines help <b>correctly compute required memory addresses and relocations</b> by casting integer datatypes (signed integers to Unsigned integers and vice versa)
+Following set of routines help <b>correctly compute required memory addresses and relocations</b> by casting integer datatypes (signed integers to Unsigned integers and vice versa) so that the script could act as its own custom loader and load dll without using Windows loader
 
 ![image](/assets/images/psloader/conversions.png){:class="img-responsive"}
 
-Finally it defines a bunch of routines to process and load embedded malicious payload.
+Finally it defines a bunch of routines to write embedded malicious binary into another process's memory and execute it.
 
 Script starts its execution by detecting underlying processor's architecture to know whether it is running on x86 or amd64 and to prepare 32-bit or 64-bit dll accordingly using following if-else block 
 
@@ -148,7 +148,7 @@ as soon as script exits, <b>FE026B-Readme.txt</b> window appears on the system w
 ![image](/assets/images/psloader/message.png){:class="img-responsive"}
 
 
-<strong><em>Note: </em></strong>Ransomware dll being injected can be dumped into a binary file having SHA-256 [302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b][md5-e17951ccd3f30ef2ecc7963628210a5e] hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xADDE</b>
+<strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 [302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b][md5-e17951ccd3f30ef2ecc7963628210a5e] hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xADDE</b></i>
 
 ![image](/assets/images/psloader/dumped.png){:class="img-responsive"}
 
@@ -158,15 +158,14 @@ and that's it. I hope you liked this detailed writeup on the powershell reflecti
 
 Best regards,
 
-./$bash.
-
-[link-to-download-ps1-loader]: https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/
-[netwalker-ransomware]: https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/
-[fileless-attacks]: https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems
-
-[md5-e17951ccd3f30ef2ecc7963628210a5e]: https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection
-[md5-f5c877335920f0ef040228e18b426d00]: https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection
+<i>./$bash.</i>
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
 2. https://any.run/report/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/ca44ad38-0e46-455e-8cfd-42fb53d41a1d
+
+[netwalker-ransomware]: https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/
+[fileless-attacks]: https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems
+[link-to-download-ps1-loader]: https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/
+[md5-e17951ccd3f30ef2ecc7963628210a5e]: https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection
+[md5-f5c877335920f0ef040228e18b426d00]: https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection

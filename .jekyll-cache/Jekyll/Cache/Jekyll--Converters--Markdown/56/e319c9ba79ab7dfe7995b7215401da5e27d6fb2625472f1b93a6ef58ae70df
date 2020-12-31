@@ -1,4 +1,4 @@
-I"�D<p>Hi! I lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
+I"E<p>Hi! I lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
 
 <p>SHA-256 hash of the sample being analyzed:  <a href="https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/">f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be</a></p>
 
@@ -37,7 +37,7 @@
 
 <p><img src="/assets/images/psloader/layer2_scriptblock.png" alt="image" class="img-responsive" /></p>
 
-<p>I shall also modify second layer to get decrypted layer three contents and dump result into another output file as shown in the figure below</p>
+<p>but I shall also modify second layer to get decrypted layer three contents and dump result into another output file as shown in the figure below</p>
 
 <p><img src="/assets/images/psloader/layer2processing.png" alt="image" class="img-responsive" /></p>
 
@@ -61,7 +61,7 @@
 
 <p><b> to invoke in-memory Windows API function calls without compilation,</b> C# code to declare structs and enums for memory manipulation is defined inside a variable as shown below</p>
 
-<p><img src="/assets/images/psloader/C#code.png" alt="image" class="img-responsive" /></p>
+<p><img src="/assets/images/psloader/Csharpcode.png" alt="image" class="img-responsive" /></p>
 
 <p>and to invoke kernell32.dll APIs using wrapper .Net methods available in powershell</p>
 
@@ -69,11 +69,11 @@
 
 <p>final command in this case will let us instantiate objects by making Microsoft .Net core classes available in our powershell session and ensure ransomware’s true memory residence through reflection.</p>
 
-<p>Following set of routines help <b>correctly compute required memory addresses and relocations</b> by casting integer datatypes (signed integers to Unsigned integers and vice versa)</p>
+<p>Following set of routines help <b>correctly compute required memory addresses and relocations</b> by casting integer datatypes (signed integers to Unsigned integers and vice versa) so that the script could act as its own custom loader and load dll without using Windows loader</p>
 
 <p><img src="/assets/images/psloader/conversions.png" alt="image" class="img-responsive" /></p>
 
-<p>Finally it defines a bunch of routines to process and load embedded malicious payload.</p>
+<p>Finally it defines a bunch of routines to write embedded malicious binary into another process’s memory and execute it.</p>
 
 <p>Script starts its execution by detecting underlying processor’s architecture to know whether it is running on x86 or amd64 and to prepare 32-bit or 64-bit dll accordingly using following if-else block</p>
 
@@ -154,4 +154,5 @@
   <li>https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/</li>
   <li>https://any.run/report/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/ca44ad38-0e46-455e-8cfd-42fb53d41a1d</li>
 </ol>
+
 :ET
