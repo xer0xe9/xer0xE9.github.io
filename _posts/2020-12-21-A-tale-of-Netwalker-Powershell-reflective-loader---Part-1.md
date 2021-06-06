@@ -1,11 +1,11 @@
 ---
 layout: post
-title:  "A tale of Netwalker Powershell reflective loader - Part 1"
-date:   2020-12-30
+title:  "Netwalker: from Powershell reflective loader to injected Dll"
+date:   2021-06-10
 categories: loaders netwalker
 ---
 
-Hi! I lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for "[Netwalker ransomware][netwalker-ransomware]", performing [fileless attack][fileless-attacks]. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.
+Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for "[Netwalker ransomware][netwalker-ransomware]", performing [fileless attack][fileless-attacks]. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.
 
 SHA-256 hash of the sample being analyzed:  [f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be][link-to-download-ps1-loader]
 
@@ -153,6 +153,9 @@ as soon as script exits, <b>FE026B-Readme.txt</b> window appears on the system w
 ![image](/assets/images/psloader/dumped.png){:class="img-responsive"}
 
 replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header would result in Netwalker ransomware with [f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534][md5-f5c877335920f0ef040228e18b426d00] SHA-256 hash.
+
+
+<strong>Analyzing NetWalker Dll</strong>
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
