@@ -148,17 +148,11 @@ as soon as script exits, <b>FE026B-Readme.txt</b> window appears on the system w
 ![image](/assets/images/psloader/message.png){:class="img-responsive"}
 
 
-<strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 [302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b][md5-e17951ccd3f30ef2ecc7963628210a5e] hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xADDE</b></i>
+<strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 [302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b][md5-e17951ccd3f30ef2ecc7963628210a5e] hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xDEAD</b></i>
 
 ![image](/assets/images/psloader/dumped.png){:class="img-responsive"}
 
-replacng first two bytes <b>0xADDE</b> with <b>0x4D5A</b> in MZ header would result in Netwalker ransomware with [f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534][md5-f5c877335920f0ef040228e18b426d00] SHA-256 hash.
-
-and that's it. I hope you liked this detailed writeup on the powershell reflective loader.
-
-Best regards,
-
-<i>./$bash.</i>
+replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header would result in Netwalker ransomware with [f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534][md5-f5c877335920f0ef040228e18b426d00] SHA-256 hash.
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
