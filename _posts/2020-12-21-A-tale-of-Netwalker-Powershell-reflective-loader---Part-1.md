@@ -155,7 +155,7 @@ as soon as script exits, <b>FE026B-Readme.txt</b> window appears on the system w
 replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header would result in Netwalker ransomware with [f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534][md5-f5c877335920f0ef040228e18b426d00] SHA-256 hash.
 
 
-<strong>NetWalker Dll</strong>
+<strong>Netwalker Dll</strong>
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
