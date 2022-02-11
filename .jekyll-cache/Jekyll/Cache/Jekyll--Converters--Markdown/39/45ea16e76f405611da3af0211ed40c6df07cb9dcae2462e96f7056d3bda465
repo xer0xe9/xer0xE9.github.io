@@ -1,4 +1,4 @@
-I"�E<p>Hi! I lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
+I"1E<p>Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
 
 <p>SHA-256 hash of the sample being analyzed:  <a href="https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/">f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be</a></p>
 
@@ -137,17 +137,13 @@
 
 <p><img src="/assets/images/psloader/message.png" alt="image" class="img-responsive" /></p>
 
-<p><strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 <a href="https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection">302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b</a> hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xADDE</b></i></p>
+<p><strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 <a href="https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection">302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b</a> hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xDEAD</b></i></p>
 
 <p><img src="/assets/images/psloader/dumped.png" alt="image" class="img-responsive" /></p>
 
-<p>replacng first two bytes <b>0xADDE</b> with <b>0x4D5A</b> in MZ header would result in Netwalker ransomware with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
+<p>replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header would result in Netwalker ransomware with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
 
-<p>and that’s it. I hope you liked this detailed writeup on the powershell reflective loader.</p>
-
-<p>Best regards,</p>
-
-<p><i>./$bash.</i></p>
+<p><strong>Analyzing NetWalker Dll</strong></p>
 
 <p><strong>Sources:</strong></p>
 <ol>
