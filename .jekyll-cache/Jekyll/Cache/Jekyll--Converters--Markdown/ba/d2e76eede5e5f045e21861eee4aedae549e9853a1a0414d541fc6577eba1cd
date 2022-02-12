@@ -1,4 +1,4 @@
-I"1E<p>Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
+I"9J<p>Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
 
 <p>SHA-256 hash of the sample being analyzed:  <a href="https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/">f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be</a></p>
 
@@ -137,13 +137,29 @@
 
 <p><img src="/assets/images/psloader/message.png" alt="image" class="img-responsive" /></p>
 
-<p><strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file having SHA-256 <a href="https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection">302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b</a> hash but it can be seen that first two bytes in this case contain wrong hex value <b>0xDEAD</b></i></p>
+<p><strong><em>Note: </em></strong><i>Ransomware dll being injected can be dumped into a binary file in powershell script, which has SHA-256 <a href="https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection">302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b</a> hash but it can be seen that it is 64-bit PE file and first two bytes in this case have wrong hex value <b>0xDEAD</b></i></p>
 
 <p><img src="/assets/images/psloader/dumped.png" alt="image" class="img-responsive" /></p>
 
-<p>replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header would result in Netwalker ransomware with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
+<p>replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header in HxD editor would result in Netwalker ransomware dll with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
 
-<p><strong>Analyzing NetWalker Dll</strong></p>
+<p><strong>Deciphering Netwalker x86-64 dll</strong></p>
+
+<p>Let’s load final dll in IDA and perform basic static analysis, I’ll start by looking up for strings, but they are mostly useless, moreover, it has only one export i.e., main entry which seems to implement all its functionality</p>
+
+<p>second thing to note is that it has no imports table, which implies that it might be obfuscating APIs or strings with some hashing or encryption algorithm, this can be verified by PEiD’s Krypto ANALyzer plugin which shows multiple references to different encoding, hashing and encrypt/decrypt algorithms in dll as shown in figure below</p>
+
+<p>image</p>
+
+<p>If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>sub_180005D60</b> routine being used in a loop along with other constants</p>
+
+<p>image</p>
+
+<p>let’s rename this routine to <b>crc32_checksum</b> and look for its cross references, result shows it is cross referenced two times in <b>sub_180001000</b>, if it is further cross referenced, it immediately shows <b>~170</b> references</p>
+
+<p>image</p>
+
+<p>we can assume here that the routine <b>sub_180001000<b> being cross referenced ~170 times is possibly decrypting strings, I’ll rename it to <b>decrypt_strings</b></b></b></p>
 
 <p><strong>Sources:</strong></p>
 <ol>
