@@ -155,7 +155,7 @@ as soon as script exits, <b>FE026B-Readme.txt</b> window appears on the system w
 replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header in HxD editor would result in Netwalker ransomware dll with [f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534][md5-f5c877335920f0ef040228e18b426d00] SHA-256 hash.
 
 
-<strong>Deciphering Netwalker x86-64 DLL</strong>
+<h1>Deciphering Netwalker x86-64 DLL</h1>
 
 
 Let's load final dll in IDA and perform basic static analysis first, I'll start by looking up for strings, but they are mostly useless, moreover, it has only one export i.e., main entry which seems to implement all its functionality
@@ -248,7 +248,7 @@ var_rtlAllocHeap_ = (__int64 (__fastcall *)(_QWORD, signed __int64, signed __int
 
 {% endhighlight %}
 
-this routine has multiple similar code blocks but with different hash values, here it can be assumed it is decrypting APIs from different libraries, let's rename it to <b>API_hashing</b> and look for its Xrefs which lead to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
+this routine has multiple similar code blocks but with different hash values, here it can be assumed it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which lead to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
