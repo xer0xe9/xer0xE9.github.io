@@ -191,7 +191,7 @@
 
 <p>replacng first two bytes <b>0xDEAD</b> with <b>0x4D5A</b> in DOS header in HxD editor would result in Netwalker ransomware dll with <a href="https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection">f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534</a> SHA-256 hash.</p>
 
-<p><strong>Deciphering Netwalker x86-64 DLL</strong></p>
+<h1>Deciphering Netwalker x86-64 DLL</h1>
 
 <p>Let’s load final dll in IDA and perform basic static analysis first, I’ll start by looking up for strings, but they are mostly useless, moreover, it has only one export i.e., main entry which seems to implement all its functionality</p>
 
@@ -205,7 +205,7 @@
 
 <p><img src="/assets/images/netwalker/crc32_loop.png" alt="image" class="img-responsive" /></p>
 
-<p>a quick decompilation of this routine further confirms our assumption</p>
+<p>a do-while loop in decompiled routine shows <b>CRC32 division flow</b></p>
 
 <p><img src="/assets/images/netwalker/decompiled_crc32.png" alt="image" class="img-responsive" /></p>
 
@@ -279,7 +279,17 @@
   <span class="o">*</span><span class="p">(</span><span class="n">_QWORD</span> <span class="o">*</span><span class="p">)(</span><span class="n">qword_1800171E8</span> <span class="o">+</span> <span class="mi">416</span><span class="p">)</span> <span class="o">=</span> <span class="n">decrypt_strings_sub_180001000</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="mh">0x5368361B</span><span class="p">);</span>
   <span class="o">*</span><span class="p">(</span><span class="n">_QWORD</span> <span class="o">*</span><span class="p">)(</span><span class="n">qword_1800171E8</span> <span class="o">+</span> <span class="mi">424</span><span class="p">)</span> <span class="o">=</span> <span class="n">decrypt_strings_sub_180001000</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="mh">0xCACBBC36</span><span class="p">);</span></code></pre></figure>
 
-<p>this routine has multiple similar code blocks but with different hash values, here it can be assumed it is decrypting APIs from different libraries, let’s rename it to <b>API_hashing</b> and look for its Xrefs which lead to DLL’s main <b>DllEntryPoint</b> routine - now it’s time to look into it dynamically for our assumptions.</p>
+<p>this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let’s rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL’s main <b>DllEntryPoint</b> routine - now it’s time to look into it dynamically for our assumptions.</p>
+
+<p>First routine <b>sub_180001310</b> that’s being called in <b>resolve_imports</b> is taking <b>0x84C05E40</b> hash value as parameter, a quick Google search shows it is for <b>“ntdll.dll”</b> which can also be verified with Python</p>
+
+<p><img src="/assets/images/netwalker/python_ntdll_crc32.png" alt="image" class="img-responsive" /></p>
+
+<p>this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> APi, it is first called to allocate a block of memory on heap to later store resolved addresses there</p>
+
+<p><img src="/assets/images/netwalker/get_ntdll_handle.png" alt="image" class="img-responsive" /></p>
+
+<p>this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries</p>
 
 <p><strong>Sources:</strong></p>
 <ol>

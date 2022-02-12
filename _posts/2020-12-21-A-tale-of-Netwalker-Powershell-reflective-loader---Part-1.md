@@ -248,7 +248,18 @@ var_rtlAllocHeap_ = (__int64 (__fastcall *)(_QWORD, signed __int64, signed __int
 
 {% endhighlight %}
 
-this routine has multiple similar code blocks but with different hash values, here it can be assumed it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which lead to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
+this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
+
+First routine <b>sub_180001310</b> that's being called in <b>resolve_imports</b> is taking <b>0x84C05E40</b> hash value as parameter, a quick Google search shows it is for <b>"ntdll.dll"</b> which can also be verified with Python
+
+![image](/assets/images/netwalker/python_ntdll_crc32.png){:class="img-responsive"}
+
+this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> APi, it is first called to allocate a block of memory on heap to later store resolved addresses there
+
+![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
+
+this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries
+
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
