@@ -170,7 +170,7 @@ If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>su
 
 ![image](/assets/images/netwalker/crc32_loop.png){:class="img-responsive"}
 
-a quick decompilation of this routine further confirms our assumption
+a do-while loop in decompiled routine shows <b>CRC32 division flow</b>
 
 ![image](/assets/images/netwalker/decompiled_crc32.png){:class="img-responsive"}
 
