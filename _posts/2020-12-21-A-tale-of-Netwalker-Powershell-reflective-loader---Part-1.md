@@ -204,6 +204,7 @@ var_rtlAllocHeap_ = (__int64 (__fastcall *)(_QWORD, signed __int64, signed __int
   *(_QWORD *)(qword_1800171E8 + 64) = decrypt_strings_sub_180001000(v1, 0x4896A43);
   *(_QWORD *)(qword_1800171E8 + 88) = decrypt_strings_sub_180001000(v1, 0x4C8A5B22);
   *(_QWORD *)(qword_1800171E8 + 96) = decrypt_strings_sub_180001000(v1, 0x61E2048F);
+  
 {% endhighlight %}
 
 this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
