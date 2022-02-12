@@ -183,29 +183,7 @@ we can assume here that the routine <b>sub_180001000</b> being cross referenced 
 
 now let's take a close look at <b>sub_180001490</b> routine which almost has all the Xrefs to <b>decrypt_strings</b>, following code shows it is taking two arguments v1, which is being used in all of its calls and a 4-byte hex value which seems to be CRC32 hash and retrun value is being stored to different offsets of an array 
 
-{% highlight c++ %}
-var_rtlAllocHeap_ = (__int64 (__fastcall *)(_QWORD, signed __int64, signed __int64))decrypt_strings_sub_180001000(var_h_ntdll,0xA1D45974);
-
-  if ( !var_rtlAllocHeap_ )
-    return (unsigned int)dword_1800171E0;
-  qword_1800171E8 = var_rtlAllocHeap_(*(_QWORD *)(__readgsqword(0x60u) + 0x30), 8i64, 0x510i64);
-  if ( !qword_1800171E8 )
-    return (unsigned int)dword_1800171E0;
-  *(_QWORD *)qword_1800171E8 = decrypt_strings_sub_180001000(v1, 0xA1D45974);
-  *(_QWORD *)(qword_1800171E8 + 8) = decrypt_strings_sub_180001000(v1, 0xAF11BC24);
-  *(_QWORD *)(qword_1800171E8 + 16) = decrypt_strings_sub_180001000(v1, 0xB973B8DC);
-  *(_QWORD *)(qword_1800171E8 + 24) = decrypt_strings_sub_180001000(v1, 0x8463960A);
-  *(_QWORD *)(qword_1800171E8 + 32) = decrypt_strings_sub_180001000(v1, 0xD141AFD3);
-  *(_QWORD *)(qword_1800171E8 + 40) = decrypt_strings_sub_180001000(v1, 0x57F17B6B);
-  *(_QWORD *)(qword_1800171E8 + 48) = decrypt_strings_sub_180001000(v1, 0x23398D9A);
-  *(_QWORD *)(qword_1800171E8 + 72) = decrypt_strings_sub_180001000(v1, 0xBD6735C3);
-  *(_QWORD *)(qword_1800171E8 + 80) = decrypt_strings_sub_180001000(v1, 0x900F6A6E);
-  *(_QWORD *)(qword_1800171E8 + 56) = decrypt_strings_sub_180001000(v1, 0xA8AE7412);
-  *(_QWORD *)(qword_1800171E8 + 64) = decrypt_strings_sub_180001000(v1, 0x4896A43);
-  *(_QWORD *)(qword_1800171E8 + 88) = decrypt_strings_sub_180001000(v1, 0x4C8A5B22);
-  *(_QWORD *)(qword_1800171E8 + 96) = decrypt_strings_sub_180001000(v1, 0x61E2048F);
-  
-{% endhighlight %}
+![image](/assets/images/netwalker/resolve_Pis_initial_.png){:class="img-responsive"}
 
 this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
 
