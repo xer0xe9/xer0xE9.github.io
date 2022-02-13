@@ -195,8 +195,21 @@ this routine returns handle for <b>ntdll.dll</b> library, later it takes another
 
 ![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
 
-this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries
+this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues further to check for stomped MZ header <b>0xDEAD</b> as shown by the loop in figure below
 
+![image](/assets/images/netwalker/stomped_MZ_header.png){:class="img-responsive"}
+
+and then continues further to fix <b>MZ</b> header in memory and read image's resources
+
+![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
+
+after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data as RC4 key and decrypting rest of data with the extracted key - following code shows 3 RC4 loops <b>1.</b> Initialization (creating Substitution Box) <b>2.</b> Scrambling Substitution box with key to generate a pseudo-random keystream <n>3.</n> xoring keystream with rest of the data
+
+![image](/assets/images/netwalker/rc4_decrypt.png){:class="img-responsive"}
+
+decrypted data seems to be the <b>malware configuration</b> consisting of ransom note along with other info in <b>json</b> format
+
+![image](/assets/images/netwalker/malw-config.png){:class="img-responsive"}
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
