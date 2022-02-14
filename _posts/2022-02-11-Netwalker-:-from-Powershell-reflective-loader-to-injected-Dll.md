@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Netwalker: from Powershell reflective loader to injected Dll"
+title:  "Netwalker: from Powershell reflective loader to injected dll"
 date:   2022-02-11
 categories: loaders netwalker
 ---
@@ -195,15 +195,15 @@ this routine returns handle for <b>ntdll.dll</b> library, later it takes another
 
 ![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
 
-this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>DEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
+this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>0xDEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
 
 ![image](/assets/images/netwalker/stomped_MZ_header.png){:class="img-responsive"}
 
-if <b>0xDEAD</b> header value is intact (making sure DLL is being run injected in explorer.exe), it continues further to fix <b>MZ</b> header in memory and read image's resources - otherwise it'll throw <b>ACCESS_VIOLATION</b> exception
+if <b>0xDEAD</b> header value is intact (i.e., making sure DLL is being run <b>injected</b> in <b>explorer.exe</b>), it continues further to fix <b>MZ</b> header in memory and read image's resources - otherwise it'll throw <b>ACCESS_VIOLATION</b> exception and exit
 
 ![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
 
-after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data as RC4 key and decrypting rest of data with the extracted key - following code shows 3 RC4 loops <b>1.</b> Initialization (creating Substitution Box) <b>2.</b> Scrambling Substitution box with key to generate a pseudo-random keystream <n>3.</n> xoring keystream with rest of the data
+after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data as <b>RC4 key</b> and decrypting rest of the data with the extracted key - following code shows <b>3</b> RC4 loops <b>1.</b> Initialization (creating <b>Substitution Box</b>) <b>2.</b> <b>Scrambling Substitution</b> box with key to generate a <b>pseudo-random</b> keystream <b>3.</b> <b>xoring</b> keystream with rest of the data
 
 ![image](/assets/images/netwalker/rc4_decrypt.png){:class="img-responsive"}
 
