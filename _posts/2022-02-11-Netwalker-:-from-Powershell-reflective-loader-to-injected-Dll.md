@@ -166,7 +166,7 @@ second important thing to note here is that it has no <n>imports address table</
 
 ![image](/assets/images/netwalker/algo_references.png){:class="img-responsive"}
 
-If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>sub_180005D60</b> routine being used in a loop along with other constants
+If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>sub_180005D60</b> routine being used in a loop
 
 ![image](/assets/images/netwalker/crc32_loop.png){:class="img-responsive"}
 
