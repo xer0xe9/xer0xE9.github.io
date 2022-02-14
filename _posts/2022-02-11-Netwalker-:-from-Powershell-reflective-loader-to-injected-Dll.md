@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Netwalker: from Powershell reflective loader to injected Dll"
-date:   2021-06-10
+date:   2022-02-11
 categories: loaders netwalker
 ---
 
@@ -162,15 +162,15 @@ Let's load final dll in IDA and perform basic static analysis first, I'll start 
 
 ![image](/assets/images/netwalker/exports.png){:class="img-responsive"}
 
-second important thing to note here is that it has no <n>imports address table</n>, which implies that it might be obfuscating APIs or strings with some hashing or encryption algorithm, this can be verified by loading the dll in <b>PEiD</b> and looking for possible algorithms in its <b>Krypto ANALyzer plugin</b> which shows multiple references to different encoding, hashing and encrypt/decrypt algorithms in dll as shown in the figure below
+second important thing to note here is that it has no <n>imports address table</n>, which implies that it might be obfuscating APIs or strings with some hashing or encryption algorithm, this can be verified by loading the dll in <b>PEiD</b> and looking for possible algorithms in its <b>K</b>rypto <b>ANAL</b>yzer plugin which shows multiple references to different encoding, hashing and encrypt/decrypt algorithms in dll as shown in the figure below
 
 ![image](/assets/images/netwalker/algo_references.png){:class="img-responsive"}
 
-If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>sub_180005D60</b> routine being used in a loop along with other constant values
+If I randomly pick a CRC32 reference and look it up in dll, it is found in <b>sub_180005D60</b> routine being used in a loop along with other constants
 
 ![image](/assets/images/netwalker/crc32_loop.png){:class="img-responsive"}
 
-a do-while loop in decompiled routine shows <b>CRC32 division flow</b>
+do-while loop in decompiled routine shows <b>CRC32 division flow</b>
 
 ![image](/assets/images/netwalker/decompiled_crc32.png){:class="img-responsive"}
 
@@ -185,21 +185,21 @@ now let's take a close look at <b>sub_180001490</b> routine which almost has all
 
 ![image](/assets/images/netwalker/resolve_Pis_initial_.png){:class="img-responsive"}
 
-this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically for our assumptions.
+this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let's rename it to <b>resolve_imports</b> and look for its Xrefs which leads to DLL's main <b>DllEntryPoint</b> routine - now it's time to look into it dynamically.
 
-First routine <b>sub_180001310</b> that's being called in <b>resolve_imports</b> is taking <b>0x84C05E40</b> hash value as parameter, a quick Google search shows it is for <b>"ntdll.dll"</b> which can also be verified with Python
+First routine that is being called by DLL is <b>resolve_imports</b>, which in turn calls <b>sub_180001310</b> routine, it is taking <b>0x84C05E40</b> hash value as parameter, a quick Google search shows it is for <b>"ntdll.dll"</b> which can also be verified with Python
 
 ![image](/assets/images/netwalker/python_ntdll_crc32.png){:class="img-responsive"}
 
-this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> APi, it is first called to allocate a block of memory on heap to later store resolved addresses there
+this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> API, it is first called to allocate a block of memory on heap to later store resolved addresses there
 
 ![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
 
-this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues further to check for stomped MZ header <b>0xDEAD</b> as shown by the loop in figure below
+this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>DEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
 
 ![image](/assets/images/netwalker/stomped_MZ_header.png){:class="img-responsive"}
 
-and then continues further to fix <b>MZ</b> header in memory and read image's resources
+if <b>0xDEAD</b> header value is intact (making sure DLL is being run injected in explorer.exe), it continues further to fix <b>MZ</b> header in memory and read image's resources - otherwise it'll throw <b>ACCESS_VIOLATION</b> exception
 
 ![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
 
