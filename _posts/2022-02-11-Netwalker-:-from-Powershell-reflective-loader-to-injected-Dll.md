@@ -215,6 +215,7 @@ decrypted data seems to be the <b>malware configuration</b> consisting of ransom
 
 ![image](/assets/images/netwalker/malw-config.png){:class="img-responsive"}
 
+That's it. See you next time.
 
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
