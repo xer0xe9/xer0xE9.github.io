@@ -195,11 +195,15 @@ this routine returns handle for <b>ntdll.dll</b> library, later it takes another
 
 ![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
 
-this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>0xDEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
+this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries. I wrote a simple IDAPython script [here][here] which resolves CRC32 hashes and adds resolved value in comment
+
+![image](/assets/images/netwalker/resolved.png){:class="img-responsive"}
+
+after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>0xDEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
 
 ![image](/assets/images/netwalker/stomped_MZ_header.png){:class="img-responsive"}
 
-if <b>0xDEAD</b> header value is intact (i.e., making sure DLL is being run <b>injected</b> in <b>explorer.exe</b>), it continues further to fix <b>MZ</b> header in memory and read image's resources - otherwise it'll throw <b>ACCESS_VIOLATION</b> exception and exit
+if <b>0xDEAD</b> header value is intact (i.e., making sure DLL is being run <b>injected</b> in <b>explorer.exe</b>), it continues further to fix <b>MZ</b> header in memory and read image's resources - otherwise it'll throw <b>ACCESS_VIOLATION</b> exception and exits
 
 ![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
 
@@ -211,6 +215,7 @@ decrypted data seems to be the <b>malware configuration</b> consisting of ransom
 
 ![image](/assets/images/netwalker/malw-config.png){:class="img-responsive"}
 
+
 <strong>Sources:</strong>
 1. https://blog.trendmicro.com/trendlabs-security-intelligence/netwalker-fileless-ransomware-injected-via-reflective-loading/
 2. https://any.run/report/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/ca44ad38-0e46-455e-8cfd-42fb53d41a1d
@@ -220,3 +225,4 @@ decrypted data seems to be the <b>malware configuration</b> consisting of ransom
 [link-to-download-ps1-loader]: https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/
 [md5-e17951ccd3f30ef2ecc7963628210a5e]: https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection
 [md5-f5c877335920f0ef040228e18b426d00]: https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection
+[here]: https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py
