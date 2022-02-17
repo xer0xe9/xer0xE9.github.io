@@ -211,13 +211,15 @@ after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine 
 
 ![image](/assets/images/netwalker/rc4_decrypt.png){:class="img-responsive"}
 
-decrypted data seems to be the <b>malware configuration</b> consisting of ransom note along with other info in <b>json</b> format
+decrypted data seems to be malware's embedded <b>configuration</b> in <b>json</b> format
 
 ![image](/assets/images/netwalker/malw-config.png){:class="img-responsive"}
 
 this can also be verified by copying resource as hex string along with 7-byte hex key on Cyberchef
 
 ![image](/assets/images/netwalker/cyberchef_recipe.png){:class="img-responsive"}
+
+next routine <b>sub_180004600</b> parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker's ToR info and ransomware note along with ransomware note file name and format
 
 That's it. See you next time.
 
