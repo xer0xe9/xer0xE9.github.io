@@ -219,7 +219,7 @@ this can also be verified by copying resource as hex string along with 7-byte he
 
 ![image](/assets/images/netwalker/cyberchef_recipe.png){:class="img-responsive"}
 
-next routine <b>sub_180004600</b> parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker's ToR info and ransomware note along with ransomware note file name and format
+next routine <b>sub_180004600</b> parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker's ToR info and ransomware note along with ransomware note file name and format and eventually performs ransomware activity.
 
 That's it. See you next time.
 
