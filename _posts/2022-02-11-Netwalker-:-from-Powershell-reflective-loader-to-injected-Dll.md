@@ -207,7 +207,7 @@ if <b>0xDEAD</b> header value is intact (i.e., making sure DLL is being run <b>i
 
 ![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
 
-after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data as <b>RC4 key</b> and decrypting rest of the data with the extracted key - following code shows <b>3</b> RC4 loops <b>1.</b> Initialization (creating <b>Substitution Box</b>) <b>2.</b> <b>Scrambling Substitution</b> box with key to generate a <b>pseudo-random</b> keystream <b>3.</b> <b>xoring</b> keystream with rest of the data
+after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data is probably length of key, next 7 bytes (cZu-H!<) represent <b>RC4 key</b> which is being used to decrypt rest of the data - following code shows <b>3</b> RC4 loops <b>1.</b> Initialization (creating <b>Substitution Box</b>) <b>2.</b> <b>Scrambling Substitution</b> box with key to generate a <b>pseudo-random</b> keystream <b>3.</b> <b>xoring</b> keystream with rest of the data
 
 ![image](/assets/images/netwalker/rc4_decrypt.png){:class="img-responsive"}
 
