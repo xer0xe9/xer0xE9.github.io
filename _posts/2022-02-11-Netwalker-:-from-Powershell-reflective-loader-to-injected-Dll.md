@@ -174,7 +174,7 @@ do-while loop in decompiled routine shows <b>CRC32 division flow</b>
 
 ![image](/assets/images/netwalker/decompiled_crc32.png){:class="img-responsive"}
 
-let's rename this routine to <b>crc32_checksum</b> and look for its cross references, result shows it is cross referenced two times in <b>sub_180001000</b>, if this routine is subsequently checked for further cross references, it shows <b>~165</b> references
+let's rename this routine to <b>crc32_checksum</b> and look for its cross references, result shows it is cross referenced two times in <b>sub_180001000</b>, if this routine is subsequently checked for further cross references, 6it shows <b>~165</b> references
 
 ![image](/assets/images/netwalker/decrypt_strings_xrefs.png){:class="img-responsive"}
 
@@ -191,7 +191,7 @@ First routine that is being called by DLL is <b>resolve_imports</b>, which in tu
 
 ![image](/assets/images/netwalker/python_ntdll_crc32.png){:class="img-responsive"}
 
-this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> API, it is first called to allocate a block of memory on heap to later store resolved addresses there
+this routine returns handle for <b>ntdll.dll</b> library, later it takes another hash value <b>0xA1D45974</b> which is resolved to <b>RtlAllocateHeap</b> API, it is first called to allocate a block of memory on heap to later store resolved addresses there on different array indexes
 
 ![image](/assets/images/netwalker/get_ntdll_handle.png){:class="img-responsive"}
 
@@ -199,7 +199,7 @@ this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, a
 
 ![image](/assets/images/netwalker/resolved.png){:class="img-responsive"}
 
-after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>0xDEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration as shown by the loop in figure below
+after resolving imports, it continues to check for stomped MZ header <b>0xDEAD</b> by first copying header value <b>0xDEAD</b> in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration to reach image's base address as shown by the loop in figure below
 
 ![image](/assets/images/netwalker/stomped_MZ_header.png){:class="img-responsive"}
 
@@ -207,7 +207,7 @@ if <b>0xDEAD</b> header value is intact (i.e., making sure DLL is being run <b>i
 
 ![image](/assets/images/netwalker/loadresource.png){:class="img-responsive"}
 
-after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data which is probably length of key, next 7 bytes (cZu-H!<) are extracted as <b>RC4 key</b> which is being used to decrypt rest of the payload - following code shows <b>3</b> RC4 loops <b>1.</b> Initialization (creating <b>Substitution Box</b>) <b>2.</b> <b>Scrambling Substitution</b> box with key to generate a <b>pseudo-random</b> keystream <b>3.</b> <b>xoring</b> keystream with rest of the data
+after required resource has been loaded in memory, <b>sub_18000EAF0</b> routine processes it by first extracting first 4 bytes of data which is probably length of key, next 7 bytes (cZu-H!<) are extracted as <b>RC4 key</b> which is being used to decrypt rest of the payload - following code from <b>sub_18000EAF0</b> routine implemets <b>3</b> recognizable RC4 loops <b>1.</b> Initialization (creating <b>Substitution Box</b>) <b>2.</b> <b>Scrambling Substitution</b> box with key to generate a <b>pseudo-random</b> keystream <b>3.</b> <b>xoring</b> keystream with rest of the data
 
 ![image](/assets/images/netwalker/rc4_decrypt.png){:class="img-responsive"}
 
@@ -219,7 +219,7 @@ this can also be verified by copying resource as hex string along with 7-byte he
 
 ![image](/assets/images/netwalker/cyberchef_recipe.png){:class="img-responsive"}
 
-next routine <b>sub_180004600</b> parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker's ToR info and ransomware note along with ransomware note file name and format and eventually performs ransomware activity.
+next routine <b>sub_180004600</b> parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker's ToR info and ransomware note along with ransomware note file name and format, subsequent routines decrypt ransom note with AES decryption algorithm by using 256-bit hardcoded key, checks running processes to kill any blacklisted process and eventually performs ransomware activity.
 
 That's it. See you next time.
 
