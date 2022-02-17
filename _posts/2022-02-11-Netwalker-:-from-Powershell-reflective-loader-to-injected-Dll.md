@@ -215,6 +215,10 @@ decrypted data seems to be the <b>malware configuration</b> consisting of ransom
 
 ![image](/assets/images/netwalker/malw-config.png){:class="img-responsive"}
 
+this can also be verified by copying resource hex dump along with 7-byte hex key on Cyberchef
+
+![image](/assets/images/netwalker/cyberchef_recipe.png){:class="img-responsive"}
+
 That's it. See you next time.
 
 <strong>Sources:</strong>
