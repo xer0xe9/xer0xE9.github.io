@@ -174,14 +174,14 @@ do-while loop in decompiled routine shows <b>CRC32 division flow</b>
 
 ![image](/assets/images/netwalker/decompiled_crc32.png){:class="img-responsive"}
 
-let's rename this routine to <b>crc32_checksum</b> and look for its cross references, result shows it is cross referenced two times in <b>sub_180001000</b>, if this routine is subsequently checked for further cross references, 6it shows <b>~165</b> references
+let's rename this routine to <b>crc32_checksum</b> and look for its cross references, result shows it is cross referenced two times in <b>sub_180001000</b>, if this routine is subsequently checked for further cross references, it shows <b>~165</b> references
 
 ![image](/assets/images/netwalker/decrypt_strings_xrefs.png){:class="img-responsive"}
 
 we can assume here that the routine <b>sub_180001000</b> being cross referenced <b>~165</b> times is possibly decrypting strings, I'll rename it to <b>decrypt_strings</b>
 
 
-now let's take a close look at <b>sub_180001490</b> routine which almost has all the Xrefs to <b>decrypt_strings</b>, following code shows it is taking two arguments v1, which is being used in all of its calls and a 4-byte hex value which seems to be CRC32 hash and retrun value is being stored to different offsets of an array 
+now let's take a closer look at <b>sub_180001490</b> routine which almost has all the Xrefs to <b>decrypt_strings</b>, following code shows it is taking two arguments v1, which is being used in all of its calls and a 4-byte hex value which seems to be CRC32 hash and retrun value is being stored to different offsets of an array 
 
 ![image](/assets/images/netwalker/resolve_Pis_initial_.png){:class="img-responsive"}
 
