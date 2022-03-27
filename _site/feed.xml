@@ -1,4 +1,100 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-02-13T14:15:10+05:00</updated><id>/feed.xml</id><title type="html">0x00-0x7F blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">Netwalker: from Powershell reflective loader to injected Dll</title><link href="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/" rel="alternate" type="text/html" title="Netwalker: from Powershell reflective loader to injected Dll" /><published>2021-06-10T00:00:00+05:00</published><updated>2021-06-10T00:00:00+05:00</updated><id>/Netwalker-:-from-Powershell-reflective-loader-to-injected-Dll</id><content type="html" xml:base="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/">&lt;p&gt;Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “&lt;a href=&quot;https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/&quot;&gt;Netwalker ransomware&lt;/a&gt;”, performing &lt;a href=&quot;https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems&quot;&gt;fileless attack&lt;/a&gt;. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-03-28T02:56:33+05:00</updated><id>/feed.xml</id><title type="html">0x00-0x7F blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">A Case of Vidar Infostealer - Part 1 (Unpacking)</title><link href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 1 (Unpacking)" /><published>2022-03-28T00:00:00+05:00</published><updated>2022-03-28T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">&lt;p&gt;Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my &lt;b&gt;BSides Islamabad 2021&lt;/b&gt; talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.&lt;/p&gt;
+
+&lt;p&gt;&lt;b&gt;SHA256:&lt;/b&gt; &lt;a href=&quot;https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/&quot;&gt;5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Technical Analysis&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;I usually start unpacking general malware packers/loaders by looking it first into basic static analysis tools, then opening it into IDA and taking a bird’s eye view of different sections for variables with possible encrypted strings, keys, imports or other global variables containing important information, checking if it has any crypto signatures identified and then start debugging it. After loading it into x64dbg, I first put breakpoint on memory allocation APIs such as LocalAlloc, GlobalAlloc, VirtualAlloc and memory protection API: VirtualProtect, and hit run button to see if any of the breakpoints hits. If yes, then it is fairly simple to unpack it and extract next stage payload, otherwise it might require in-depth static and dynamic analysis. Let’s hit run button to see where it takes us next.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Shellcode Extraction&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Here we go, the first breakpoint hits in this case, is &lt;b&gt;VirtualProtect&lt;/b&gt;, being called on a &lt;b&gt;stack&lt;/b&gt; memory region of size &lt;b&gt;0x28A&lt;/b&gt; to grant it &lt;b&gt;E&lt;/b&gt;xecute &lt;b&gt;R&lt;/b&gt;ead &lt;b&gt;W&lt;/b&gt;rite (0x40) protection, strage enough right!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/virtualprotect.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;first few opcodes &lt;b&gt;E9&lt;/b&gt;, &lt;b&gt;55&lt;/b&gt;, &lt;b&gt;8B&lt;/b&gt; etc. in dumped data on stack corrspond to &lt;b&gt;jmp&lt;/b&gt;, &lt;b&gt;push&lt;/b&gt; and &lt;b&gt;mov&lt;/b&gt; instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as &lt;b&gt;stack strings&lt;/b&gt; right before VirtualProtect call and list of arguments are pushed as shown in the figure below&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/shellcode_stack_strings.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;following few statements are preparing to execute shellcode on stack by retrieving a handle to a dummy device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/shellcode_exec.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;let’s now start digging into the shellcode.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Debugging shellcode to extract final payload&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;As soon as, &lt;b&gt;GrayStringA&lt;/b&gt; executes, it hits on &lt;b&gt;VirtualAlloc&lt;/b&gt; breakpoint set in the debugger, which is being called to reserver/commit 0xAA3CE size of memory with &lt;b&gt;MEM_COMMIT | MEM_RESERVE&lt;/b&gt; (0x3000) memory allocation type&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/virtualalloc_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;returning control from &lt;b&gt;VirtualAlloc&lt;/b&gt; and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call &lt;b&gt;ReadFile&lt;/b&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/readfile_handle.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;which reads 0xAA3CE bytes of data from parent process image into the buffer, let’s say it &lt;b&gt;buffer1&lt;/b&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/buffer1.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;further execution again hits at &lt;b&gt;VirtualAlloc&lt;/b&gt; breakpoint, this time allocating &lt;b&gt;0x14F0&lt;/b&gt; bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, &lt;b&gt;buffer2&lt;/b&gt;. Hitting Run button one more time, it’ll stop at the code shown in the figure below&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/copy_loop.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian call VirtualAlloc to allocate another 0x350DE bytes of memory say &lt;b&gt;buffer3&lt;/b&gt;, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/buffer3_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;loop in following figure is decrypting data copied to buffer2 and pushing the address of this buffer on stack to execute its contents in next call&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/decrypt_buffer2.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;final buffer2 decrypted contents look as shown in figure below&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/encrypted_buffer2_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;stepping into &lt;b&gt;edx&lt;/b&gt; starts executing buffer2 contents, where it seems to push stack strings for kernel32.dll first and then retrieves kernel32.dll handle by parsing PEB (Process Environment Block) structure&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/PEB_parsing.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;retrieved kernel32.dll handle is passed to next call along with another argument with constant &lt;b&gt;FF7F721A&lt;/b&gt; value, a quick Google search for this constant shows some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine &lt;b&gt;0x0A4E&lt;/b&gt; results in &lt;b&gt;GetModuleFileNameW&lt;/b&gt; API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/resolved.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;similarly second call resolves &lt;b&gt;7F91A078&lt;/b&gt; hash value to &lt;b&gt;ExitProcess&lt;/b&gt; API, wrapper routine &lt;b&gt;0x0A4E&lt;/b&gt; iterates over library exports and routine &lt;b&gt;0x097A&lt;/b&gt; is computing hash against input export function name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into &lt;b&gt;eax&lt;/b&gt; which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/api_hash_resolve.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine &lt;b&gt;0x0BE9&lt;/b&gt; for decryption - this custom decryption scheme works by processing each byte from buffer3 using repitive neg, sun, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result gets stored in [ebp-1]&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/routine_decrypt_buffer3.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;and final value gets overwritten to the corresponding buffer3 byte&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/buffer3_contents_in_decryption.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;once buffer3 contents are decrypted, it continues to resolve other important APIs in next routine &lt;b&gt;0x0FB6&lt;/b&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/more_api_hashes.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found &lt;a href=&quot;https://github.com/0x00-0x7F/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/poc_hashing_algorithm.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;after all required APIs have been resolved, next step is to create a new process&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/createProcess.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;the new process is created using &lt;b&gt;CreateProcessW&lt;/b&gt; in suspended mode&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/process_created_in_suspended_mode.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;and then eventually final payload is injected into newly created process using SetThreadCOntext API, &lt;b&gt;CONTEXT&lt;/b&gt; structure for remote thread is set up with ContextFlag and required memory buffers and &lt;b&gt;SetThreadContext&lt;/b&gt; API is called with current thread handle and remote thread CONTEXT strure for code injection&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/final_injected_payload.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;main process terminates right after launching this process, now it’s time to dump and analyze final payload.&lt;/p&gt;
+
+&lt;p&gt;That’s it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.&lt;/p&gt;</content><author><name></name></author><category term="Infostealers" /><summary type="html">Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</summary></entry><entry><title type="html">Netwalker: from Powershell reflective loader to injected dll</title><link href="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/" rel="alternate" type="text/html" title="Netwalker: from Powershell reflective loader to injected dll" /><published>2022-02-11T00:00:00+05:00</published><updated>2022-02-11T00:00:00+05:00</updated><id>/Netwalker-:-from-Powershell-reflective-loader-to-injected-Dll</id><content type="html" xml:base="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/">&lt;p&gt;Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “&lt;a href=&quot;https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/&quot;&gt;Netwalker ransomware&lt;/a&gt;”, performing &lt;a href=&quot;https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems&quot;&gt;fileless attack&lt;/a&gt;. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.&lt;/p&gt;
 
 &lt;p&gt;SHA-256 hash of the sample being analyzed:  &lt;a href=&quot;https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/&quot;&gt;f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be&lt;/a&gt;&lt;/p&gt;
 
@@ -149,15 +245,15 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/exports.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;second important thing to note here is that it has no &lt;n&gt;imports address table&lt;/n&gt;, which implies that it might be obfuscating APIs or strings with some hashing or encryption algorithm, this can be verified by loading the dll in &lt;b&gt;PEiD&lt;/b&gt; and looking for possible algorithms in its &lt;b&gt;Krypto ANALyzer plugin&lt;/b&gt; which shows multiple references to different encoding, hashing and encrypt/decrypt algorithms in dll as shown in the figure below&lt;/p&gt;
+&lt;p&gt;second important thing to note here is that it has no &lt;n&gt;imports address table&lt;/n&gt;, which implies that it might be obfuscating APIs or strings with some hashing or encryption algorithm, this can be verified by loading the dll in &lt;b&gt;PEiD&lt;/b&gt; and looking for possible algorithms in its &lt;b&gt;K&lt;/b&gt;rypto &lt;b&gt;ANAL&lt;/b&gt;yzer plugin which shows multiple references to different encoding, hashing and encrypt/decrypt algorithms in dll as shown in the figure below&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/algo_references.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;If I randomly pick a CRC32 reference and look it up in dll, it is found in &lt;b&gt;sub_180005D60&lt;/b&gt; routine being used in a loop along with other constant values&lt;/p&gt;
+&lt;p&gt;If I randomly pick a CRC32 reference and look it up in dll, it is found in &lt;b&gt;sub_180005D60&lt;/b&gt; routine being used in a loop&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/crc32_loop.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;a do-while loop in decompiled routine shows &lt;b&gt;CRC32 division flow&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;do-while loop in decompiled routine shows &lt;b&gt;CRC32 division flow&lt;/b&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/decompiled_crc32.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -167,35 +263,47 @@
 
 &lt;p&gt;we can assume here that the routine &lt;b&gt;sub_180001000&lt;/b&gt; being cross referenced &lt;b&gt;~165&lt;/b&gt; times is possibly decrypting strings, I’ll rename it to &lt;b&gt;decrypt_strings&lt;/b&gt;&lt;/p&gt;
 
-&lt;p&gt;now let’s take a close look at &lt;b&gt;sub_180001490&lt;/b&gt; routine which almost has all the Xrefs to &lt;b&gt;decrypt_strings&lt;/b&gt;, following code shows it is taking two arguments v1, which is being used in all of its calls and a 4-byte hex value which seems to be CRC32 hash and retrun value is being stored to different offsets of an array&lt;/p&gt;
+&lt;p&gt;now let’s take a closer look at &lt;b&gt;sub_180001490&lt;/b&gt; routine which almost has all the Xrefs to &lt;b&gt;decrypt_strings&lt;/b&gt;, following code shows it is taking two arguments v1, which is being used in all of its calls and a 4-byte hex value which seems to be CRC32 hash and retrun value is being stored to different offsets of an array&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/resolve_Pis_initial_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let’s rename it to &lt;b&gt;resolve_imports&lt;/b&gt; and look for its Xrefs which leads to DLL’s main &lt;b&gt;DllEntryPoint&lt;/b&gt; routine - now it’s time to look into it dynamically for our assumptions.&lt;/p&gt;
+&lt;p&gt;this routine has multiple similar code blocks but with different hash values, here it can be assumed that it is decrypting APIs from different libraries, let’s rename it to &lt;b&gt;resolve_imports&lt;/b&gt; and look for its Xrefs which leads to DLL’s main &lt;b&gt;DllEntryPoint&lt;/b&gt; routine - now it’s time to look into it dynamically.&lt;/p&gt;
 
-&lt;p&gt;First routine &lt;b&gt;sub_180001310&lt;/b&gt; that’s being called in &lt;b&gt;resolve_imports&lt;/b&gt; is taking &lt;b&gt;0x84C05E40&lt;/b&gt; hash value as parameter, a quick Google search shows it is for &lt;b&gt;“ntdll.dll”&lt;/b&gt; which can also be verified with Python&lt;/p&gt;
+&lt;p&gt;First routine that is being called by DLL is &lt;b&gt;resolve_imports&lt;/b&gt;, which in turn calls &lt;b&gt;sub_180001310&lt;/b&gt; routine, it is taking &lt;b&gt;0x84C05E40&lt;/b&gt; hash value as parameter, a quick Google search shows it is for &lt;b&gt;“ntdll.dll”&lt;/b&gt; which can also be verified with Python&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/python_ntdll_crc32.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;this routine returns handle for &lt;b&gt;ntdll.dll&lt;/b&gt; library, later it takes another hash value &lt;b&gt;0xA1D45974&lt;/b&gt; which is resolved to &lt;b&gt;RtlAllocateHeap&lt;/b&gt; APi, it is first called to allocate a block of memory on heap to later store resolved addresses there&lt;/p&gt;
+&lt;p&gt;this routine returns handle for &lt;b&gt;ntdll.dll&lt;/b&gt; library, later it takes another hash value &lt;b&gt;0xA1D45974&lt;/b&gt; which is resolved to &lt;b&gt;RtlAllocateHeap&lt;/b&gt; API, it is first called to allocate a block of memory on heap to later store resolved addresses there on different array indexes&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/get_ntdll_handle.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, user32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries, after resolving imports, it continues further to check for stomped MZ header &lt;b&gt;0xDEAD&lt;/b&gt; as shown by the loop in figure below&lt;/p&gt;
+&lt;p&gt;this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries. I wrote a simple IDAPython script &lt;a href=&quot;https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py&quot;&gt;here&lt;/a&gt; which resolves CRC32 hashes and adds resolved value in comment&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/resolved.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;after resolving imports, it continues to check for stomped MZ header &lt;b&gt;0xDEAD&lt;/b&gt; by first copying header value &lt;b&gt;0xDEAD&lt;/b&gt; in eax, setting up rbx with a certain address and later subtracting 0x400 from rbx in each iteration to reach image’s base address as shown by the loop in figure below&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/stomped_MZ_header.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;and then continues further to fix &lt;b&gt;MZ&lt;/b&gt; header in memory and read image’s resources&lt;/p&gt;
+&lt;p&gt;if &lt;b&gt;0xDEAD&lt;/b&gt; header value is intact (i.e., making sure DLL is being run &lt;b&gt;injected&lt;/b&gt; in &lt;b&gt;explorer.exe&lt;/b&gt;), it continues further to fix &lt;b&gt;MZ&lt;/b&gt; header in memory and read image’s resources - otherwise it’ll throw &lt;b&gt;ACCESS_VIOLATION&lt;/b&gt; exception and exits&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/loadresource.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;after required resource has been loaded in memory, &lt;b&gt;sub_18000EAF0&lt;/b&gt; routine processes it by first extracting first 4 bytes of data as RC4 key and decrypting rest of data with the extracted key - following code shows 3 RC4 loops &lt;b&gt;1.&lt;/b&gt; Initialization (creating Substitution Box) &lt;b&gt;2.&lt;/b&gt; Scrambling Substitution box with key to generate a pseudo-random keystream &lt;n&gt;3.&lt;/n&gt; xoring keystream with rest of the data&lt;/p&gt;
+&lt;p&gt;after required resource has been loaded in memory, &lt;b&gt;sub_18000EAF0&lt;/b&gt; routine processes it by first extracting first 4 bytes of data which is probably length of key, next 7 bytes (cZu-H!&amp;lt;) are extracted as &lt;b&gt;RC4 key&lt;/b&gt; which is being used to decrypt rest of the payload - following code from &lt;b&gt;sub_18000EAF0&lt;/b&gt; routine implemets &lt;b&gt;3&lt;/b&gt; recognizable RC4 loops &lt;b&gt;1.&lt;/b&gt; Initialization (creating &lt;b&gt;Substitution Box&lt;/b&gt;) &lt;b&gt;2.&lt;/b&gt; &lt;b&gt;Scrambling Substitution&lt;/b&gt; box with key to generate a &lt;b&gt;pseudo-random&lt;/b&gt; keystream &lt;b&gt;3.&lt;/b&gt; &lt;b&gt;xoring&lt;/b&gt; keystream with rest of the data&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/rc4_decrypt.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;decrypted data seems to be the &lt;b&gt;malware configuration&lt;/b&gt; consisting of ransom note along with other info in &lt;b&gt;json&lt;/b&gt; format&lt;/p&gt;
+&lt;p&gt;decrypted data seems to be malware’s embedded &lt;b&gt;configuration&lt;/b&gt; in &lt;b&gt;json&lt;/b&gt; format&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/malw-config.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;this can also be verified by copying resource as hex string along with 7-byte hex key on Cyberchef&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/cyberchef_recipe.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;next routine &lt;b&gt;sub_180004600&lt;/b&gt; parses configuration to get list of file extensions which needs to be encrypted, default paths and files that should be whitelisted, attacker’s ToR info and ransomware note along with ransomware note file name and format, subsequent routines decrypt ransom note with AES decryption algorithm by using 256-bit hardcoded key, checks running processes to kill any blacklisted process and eventually performs ransomware activity.&lt;/p&gt;
+
+&lt;p&gt;That’s it. See you next time.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Sources:&lt;/strong&gt;&lt;/p&gt;
 &lt;ol&gt;

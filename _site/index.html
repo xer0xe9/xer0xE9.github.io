@@ -36,10 +36,19 @@
       <div class="wrapper">
         <div class="home">
 <h2 class="post-list-heading">Posts</h2>
-    <ul class="post-list"><li><span class="post-meta">Jun 10, 2021</span>
+    <ul class="post-list"><li><span class="post-meta">Mar 28, 2022</span>
+        <h3>
+          <a class="post-link" href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">
+            A Case of Vidar Infostealer - Part 1 (Unpacking)
+          </a>
+        </h3><p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
+<h4>
+          <a class="post-link" href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">Read more...</a>
+        </h4>
+      </li><li><span class="post-meta">Feb 11, 2022</span>
         <h3>
           <a class="post-link" href="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/">
-            Netwalker: from Powershell reflective loader to injected Dll
+            Netwalker: from Powershell reflective loader to injected dll
           </a>
         </h3><p>Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “<a href="https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/">Netwalker ransomware</a>”, performing <a href="https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems">fileless attack</a>. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.</p>
 

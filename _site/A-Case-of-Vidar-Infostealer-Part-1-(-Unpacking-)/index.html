@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>A Case of Vidar Infostealer - Part 1 (Unpacking) | 0x00-0x7F blog</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2." />
+<meta property="og:description" content="Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2." />
+<meta property="og:site_name" content="0x00-0x7F blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-03-28T00:00:00+05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
+<script type="application/ld+json">
+{"mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-28T00:00:00+05:00","datePublished":"2022-03-28T00:00:00+05:00","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="0x00-0x7F blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">0x00-0x7F blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav>
+    </div></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">A Case of Vidar Infostealer - Part 1 (Unpacking)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-03-28T00:00:00+05:00" itemprop="datePublished">Mar 28, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
+
+<p><b>SHA256:</b> <a href="https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/">5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c</a></p>
+
+<p><strong>Technical Analysis</strong></p>
+
+<p>I usually start unpacking general malware packers/loaders by looking it first into basic static analysis tools, then opening it into IDA and taking a bird’s eye view of different sections for variables with possible encrypted strings, keys, imports or other global variables containing important information, checking if it has any crypto signatures identified and then start debugging it. After loading it into x64dbg, I first put breakpoint on memory allocation APIs such as LocalAlloc, GlobalAlloc, VirtualAlloc and memory protection API: VirtualProtect, and hit run button to see if any of the breakpoints hits. If yes, then it is fairly simple to unpack it and extract next stage payload, otherwise it might require in-depth static and dynamic analysis. Let’s hit run button to see where it takes us next.</p>
+
+<p><strong>Shellcode Extraction</strong></p>
+
+<p>Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strage enough right!</p>
+
+<p><img src="/assets/images/vidar_packed/virtualprotect.png" alt="image" class="img-responsive" /></p>
+
+<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack corrspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
+
+<p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" /></p>
+
+<p>following few statements are preparing to execute shellcode on stack by retrieving a handle to a dummy device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack</p>
+
+<p><img src="/assets/images/vidar_packed/shellcode_exec.png" alt="image" class="img-responsive" /></p>
+
+<p>let’s now start digging into the shellcode.</p>
+
+<p><strong>Debugging shellcode to extract final payload</strong></p>
+
+<p>As soon as, <b>GrayStringA</b> executes, it hits on <b>VirtualAlloc</b> breakpoint set in the debugger, which is being called to reserver/commit 0xAA3CE size of memory with <b>MEM_COMMIT | MEM_RESERVE</b> (0x3000) memory allocation type</p>
+
+<p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" /></p>
+
+<p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b></p>
+
+<p><img src="/assets/images/vidar_packed/readfile_handle.png" alt="image" class="img-responsive" /></p>
+
+<p>which reads 0xAA3CE bytes of data from parent process image into the buffer, let’s say it <b>buffer1</b></p>
+
+<p><img src="/assets/images/vidar_packed/buffer1.png" alt="image" class="img-responsive" /></p>
+
+<p>further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button one more time, it’ll stop at the code shown in the figure below</p>
+
+<p><img src="/assets/images/vidar_packed/copy_loop.png" alt="image" class="img-responsive" /></p>
+
+<p>this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian call VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3</p>
+
+<p><img src="/assets/images/vidar_packed/buffer3_.png" alt="image" class="img-responsive" /></p>
+
+<p>loop in following figure is decrypting data copied to buffer2 and pushing the address of this buffer on stack to execute its contents in next call</p>
+
+<p><img src="/assets/images/vidar_packed/decrypt_buffer2.png" alt="image" class="img-responsive" /></p>
+
+<p>final buffer2 decrypted contents look as shown in figure below</p>
+
+<p><img src="/assets/images/vidar_packed/encrypted_buffer2_.png" alt="image" class="img-responsive" /></p>
+
+<p>stepping into <b>edx</b> starts executing buffer2 contents, where it seems to push stack strings for kernel32.dll first and then retrieves kernel32.dll handle by parsing PEB (Process Environment Block) structure</p>
+
+<p><img src="/assets/images/vidar_packed/PEB_parsing.png" alt="image" class="img-responsive" /></p>
+
+<p>retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant shows some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs</p>
+
+<p><img src="/assets/images/vidar_packed/resolved.png" alt="image" class="img-responsive" /></p>
+
+<p>similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export function name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax</p>
+
+<p><img src="/assets/images/vidar_packed/api_hash_resolve.png" alt="image" class="img-responsive" /></p>
+
+<p>next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine <b>0x0BE9</b> for decryption - this custom decryption scheme works by processing each byte from buffer3 using repitive neg, sun, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result gets stored in [ebp-1]</p>
+
+<p><img src="/assets/images/vidar_packed/routine_decrypt_buffer3.png" alt="image" class="img-responsive" /></p>
+
+<p>and final value gets overwritten to the corresponding buffer3 byte</p>
+
+<p><img src="/assets/images/vidar_packed/buffer3_contents_in_decryption.png" alt="image" class="img-responsive" /></p>
+
+<p>once buffer3 contents are decrypted, it continues to resolve other important APIs in next routine <b>0x0FB6</b></p>
+
+<p><img src="/assets/images/vidar_packed/more_api_hashes.png" alt="image" class="img-responsive" /></p>
+
+<p>I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found <a href="https://github.com/0x00-0x7F/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py">here</a></p>
+
+<p><img src="/assets/images/vidar_packed/poc_hashing_algorithm.png" alt="image" class="img-responsive" /></p>
+
+<p>after all required APIs have been resolved, next step is to create a new process</p>
+
+<p><img src="/assets/images/vidar_packed/createProcess.png" alt="image" class="img-responsive" /></p>
+
+<p>the new process is created using <b>CreateProcessW</b> in suspended mode</p>
+
+<p><img src="/assets/images/vidar_packed/process_created_in_suspended_mode.png" alt="image" class="img-responsive" /></p>
+
+<p>and then eventually final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection</p>
+
+<p><img src="/assets/images/vidar_packed/final_injected_payload.png" alt="image" class="img-responsive" /></p>
+
+<p>main process terminates right after launching this process, now it’s time to dump and analyze final payload.</p>
+
+<p>That’s it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.</p>
+
+
+  </div><a class="u-url" href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/" hidden></a>
+</article>
+
+      </div>
+    </main>
+
+    
+
+  </body>
+
+</html>
