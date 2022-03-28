@@ -11,11 +11,11 @@
 <meta property="og:description" content="Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2." />
 <meta property="og:site_name" content="0x00-0x7F blog" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2022-03-28T00:00:00+05:00" />
+<meta property="article:published_time" content="2022-03-27T00:00:00+05:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
 <script type="application/ld+json">
-{"mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-28T00:00:00+05:00","datePublished":"2022-03-28T00:00:00+05:00","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@type":"BlogPosting","@context":"https://schema.org"}</script>
+{"mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-27T00:00:00+05:00","datePublished":"2022-03-27T00:00:00+05:00","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@type":"BlogPosting","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="0x00-0x7F blog" /></head>
 <body><header class="site-header" role="banner">
@@ -41,7 +41,7 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">A Case of Vidar Infostealer - Part 1 (Unpacking)</h1>
     <p class="post-meta">
-      <time class="dt-published" datetime="2022-03-28T00:00:00+05:00" itemprop="datePublished">Mar 28, 2022
+      <time class="dt-published" datetime="2022-03-27T00:00:00+05:00" itemprop="datePublished">Mar 27, 2022
       </time></p>
   </header>
 

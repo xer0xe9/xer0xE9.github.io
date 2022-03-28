@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "A Case of Vidar Infostealer - Part 1 (Unpacking)"
-date:   2022-03-28
+date:   2022-03-27
 categories: Infostealers
 ---
 
