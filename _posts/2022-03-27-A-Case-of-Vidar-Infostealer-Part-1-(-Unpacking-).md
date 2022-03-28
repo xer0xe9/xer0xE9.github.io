@@ -30,7 +30,7 @@ first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack c
 ![image](/assets/images/vidar_packed/shellcode_stack_strings.png){:class="img-responsive"}
 
 
-following few statements are preparing to execute shellcode on stack by retrieving a handle to a dummy device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack
+following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack
 
 
 ![image](/assets/images/vidar_packed/shellcode_exec.png){:class="img-responsive"}
@@ -81,11 +81,11 @@ similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> 
 
 ![image](/assets/images/vidar_packed/api_hash_resolve.png){:class="img-responsive"}
 
-next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine <b>0x0BE9</b> for decryption - this custom decryption scheme works by processing each byte from buffer3 using repitive neg, sun, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result gets stored in [ebp-1] 
+next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine <b>0x0BE9</b> for decryption - this custom decryption scheme works by processing each byte from buffer3 using repetitive neg, sub, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result is stored in [ebp-1] 
 
 ![image](/assets/images/vidar_packed/routine_decrypt_buffer3.png){:class="img-responsive"}
 
-and final value gets overwritten to the corresponding buffer3 byte
+and final value overwrites the corresponding buffer3 value at [eax] offset
 
 ![image](/assets/images/vidar_packed/buffer3_contents_in_decryption.png){:class="img-responsive"}
 
@@ -97,19 +97,19 @@ I wrote a simple POC python script for hashing algorithm implemented by decrypte
 
 ![image](/assets/images/vidar_packed/poc_hashing_algorithm.png){:class="img-responsive"}
 
-after all required APIs have been resolved, next step is to create a new process
+after all required APIs have been resolved, it proceeds to create a new process
 
 ![image](/assets/images/vidar_packed/createProcess.png){:class="img-responsive"} 
 
-the new process is created using <b>CreateProcessW</b> in suspended mode
+using <b>CreateProcessW</b> in suspended mode
 
 ![image](/assets/images/vidar_packed/process_created_in_suspended_mode.png){:class="img-responsive"}
 
-and then eventually final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection
+and then final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection
 
 ![image](/assets/images/vidar_packed/final_injected_payload.png){:class="img-responsive"}
 
-main process terminates right after launching this process, now it's time to dump and analyze final payload.
+main process terminates right after launching this process, we can now take a dump of this process to extract final payload.
 
 That's it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.
 
