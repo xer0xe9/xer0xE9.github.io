@@ -20,28 +20,30 @@ I usually start unpacking general malware packers/loaders by looking it first in
 <Strong>Shellcode Extraction</Strong>
 
 
-Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strage enough right!
+Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strange enough right!
 
 ![image](/assets/images/vidar_packed/virtualprotect.png){:class="img-responsive"}
+*Figure1*
 
-
-first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack corrspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below
+first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below
 
 ![image](/assets/images/vidar_packed/shellcode_stack_strings.png){:class="img-responsive"}
 
 
-following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack
+following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack (ptr value in eax taken from Figure1)
 
 
 ![image](/assets/images/vidar_packed/shellcode_exec.png){:class="img-responsive"}
 
-let's now start digging into the shellcode.
+
+let's now start exploring the shellcode.
 
 <Strong>Debugging shellcode to extract final payload</Strong>
 
 As soon as, <b>GrayStringA</b> executes, it hits on <b>VirtualAlloc</b> breakpoint set in the debugger, which is being called to reserver/commit 0xAA3CE size of memory with <b>MEM_COMMIT \| MEM_RESERVE</b> (0x3000) memory allocation type
 
 ![image](/assets/images/vidar_packed/virtualalloc_.png){:class="img-responsive"}
+
 
 returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b> 
 
@@ -65,7 +67,7 @@ loop in following figure is decrypting data copied to buffer2 and pushing the ad
 
 ![image](/assets/images/vidar_packed/decrypt_buffer2.png){:class="img-responsive"}
 
-final buffer2 decrypted contents look as shown in figure below
+figure below shows final buffer2 decrypted contents 
 
 ![image](/assets/images/vidar_packed/encrypted_buffer2_.png){:class="img-responsive"}
 

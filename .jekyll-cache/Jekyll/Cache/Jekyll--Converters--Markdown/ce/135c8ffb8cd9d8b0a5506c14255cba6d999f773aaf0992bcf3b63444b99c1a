@@ -1,4 +1,4 @@
-I"�$<p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
+I"�$<p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
 
 <p><b>SHA256:</b> <a href="https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/">5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c</a></p>
 
@@ -8,25 +8,29 @@
 
 <p><strong>Shellcode Extraction</strong></p>
 
-<p>Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strage enough right!</p>
+<p>Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strange enough right!</p>
 
-<p><img src="/assets/images/vidar_packed/virtualprotect.png" alt="image" class="img-responsive" /></p>
+<p><img src="/assets/images/vidar_packed/virtualprotect.png" alt="image" class="img-responsive" />
+<em>Figure 1</em></p>
 
-<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack corrspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
+<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
 
-<p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" /></p>
+<p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" />
+<em>Figure 2</em></p>
 
-<p>following few statements are preparing to execute shellcode on stack by retrieving a handle to a dummy device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack</p>
+<p>following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack</p>
 
-<p><img src="/assets/images/vidar_packed/shellcode_exec.png" alt="image" class="img-responsive" /></p>
+<p><img src="/assets/images/vidar_packed/shellcode_exec.png" alt="image" class="img-responsive" />
+Figure 3</p>
 
-<p>let’s now start digging into the shellcode.</p>
+<p>let’s now start exploring the shellcode.</p>
 
 <p><strong>Debugging shellcode to extract final payload</strong></p>
 
 <p>As soon as, <b>GrayStringA</b> executes, it hits on <b>VirtualAlloc</b> breakpoint set in the debugger, which is being called to reserver/commit 0xAA3CE size of memory with <b>MEM_COMMIT | MEM_RESERVE</b> (0x3000) memory allocation type</p>
 
-<p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" /></p>
+<p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" />
+<em>Figure 4</em></p>
 
 <p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b></p>
 
@@ -64,11 +68,11 @@
 
 <p><img src="/assets/images/vidar_packed/api_hash_resolve.png" alt="image" class="img-responsive" /></p>
 
-<p>next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine <b>0x0BE9</b> for decryption - this custom decryption scheme works by processing each byte from buffer3 using repitive neg, sun, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result gets stored in [ebp-1]</p>
+<p>next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine <b>0x0BE9</b> for decryption - this custom decryption scheme works by processing each byte from buffer3 using repetitive neg, sub, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result is stored in [ebp-1]</p>
 
 <p><img src="/assets/images/vidar_packed/routine_decrypt_buffer3.png" alt="image" class="img-responsive" /></p>
 
-<p>and final value gets overwritten to the corresponding buffer3 byte</p>
+<p>and final value overwrites the corresponding buffer3 value at [eax] offset</p>
 
 <p><img src="/assets/images/vidar_packed/buffer3_contents_in_decryption.png" alt="image" class="img-responsive" /></p>
 
@@ -80,19 +84,19 @@
 
 <p><img src="/assets/images/vidar_packed/poc_hashing_algorithm.png" alt="image" class="img-responsive" /></p>
 
-<p>after all required APIs have been resolved, next step is to create a new process</p>
+<p>after all required APIs have been resolved, it proceeds to create a new process</p>
 
 <p><img src="/assets/images/vidar_packed/createProcess.png" alt="image" class="img-responsive" /></p>
 
-<p>the new process is created using <b>CreateProcessW</b> in suspended mode</p>
+<p>using <b>CreateProcessW</b> in suspended mode</p>
 
 <p><img src="/assets/images/vidar_packed/process_created_in_suspended_mode.png" alt="image" class="img-responsive" /></p>
 
-<p>and then eventually final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection</p>
+<p>and then final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection</p>
 
 <p><img src="/assets/images/vidar_packed/final_injected_payload.png" alt="image" class="img-responsive" /></p>
 
-<p>main process terminates right after launching this process, now it’s time to dump and analyze final payload.</p>
+<p>main process terminates right after launching this process, we can now take a dump of this process to extract final payload.</p>
 
 <p>That’s it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.</p>
 

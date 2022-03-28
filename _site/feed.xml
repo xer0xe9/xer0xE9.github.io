@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-03-28T09:56:40+05:00</updated><id>/feed.xml</id><title type="html">0x00-0x7F blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">A Case of Vidar Infostealer - Part 1 (Unpacking)</title><link href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 1 (Unpacking)" /><published>2022-03-27T00:00:00+05:00</published><updated>2022-03-27T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">&lt;p&gt;Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my &lt;b&gt;BSides Islamabad 2021&lt;/b&gt; talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-03-28T15:03:52+05:00</updated><id>/feed.xml</id><title type="html">0x00-0x7F blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">A Case of Vidar Infostealer - Part 1 (Unpacking)</title><link href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 1 (Unpacking)" /><published>2022-03-27T00:00:00+05:00</published><updated>2022-03-27T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">&lt;p&gt;Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my &lt;b&gt;BSides Islamabad 2021&lt;/b&gt; talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.&lt;/p&gt;
 
 &lt;p&gt;&lt;b&gt;SHA256:&lt;/b&gt; &lt;a href=&quot;https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/&quot;&gt;5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c&lt;/a&gt;&lt;/p&gt;
 
@@ -8,19 +8,20 @@
 
 &lt;p&gt;&lt;strong&gt;Shellcode Extraction&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;Here we go, the first breakpoint hits in this case, is &lt;b&gt;VirtualProtect&lt;/b&gt;, being called on a &lt;b&gt;stack&lt;/b&gt; memory region of size &lt;b&gt;0x28A&lt;/b&gt; to grant it &lt;b&gt;E&lt;/b&gt;xecute &lt;b&gt;R&lt;/b&gt;ead &lt;b&gt;W&lt;/b&gt;rite (0x40) protection, strage enough right!&lt;/p&gt;
+&lt;p&gt;Here we go, the first breakpoint hits in this case, is &lt;b&gt;VirtualProtect&lt;/b&gt;, being called on a &lt;b&gt;stack&lt;/b&gt; memory region of size &lt;b&gt;0x28A&lt;/b&gt; to grant it &lt;b&gt;E&lt;/b&gt;xecute &lt;b&gt;R&lt;/b&gt;ead &lt;b&gt;W&lt;/b&gt;rite (0x40) protection, strange enough right!&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/virtualprotect.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/virtualprotect.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;
+&lt;em&gt;Figure1&lt;/em&gt;&lt;/p&gt;
 
-&lt;p&gt;first few opcodes &lt;b&gt;E9&lt;/b&gt;, &lt;b&gt;55&lt;/b&gt;, &lt;b&gt;8B&lt;/b&gt; etc. in dumped data on stack corrspond to &lt;b&gt;jmp&lt;/b&gt;, &lt;b&gt;push&lt;/b&gt; and &lt;b&gt;mov&lt;/b&gt; instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as &lt;b&gt;stack strings&lt;/b&gt; right before VirtualProtect call and list of arguments are pushed as shown in the figure below&lt;/p&gt;
+&lt;p&gt;first few opcodes &lt;b&gt;E9&lt;/b&gt;, &lt;b&gt;55&lt;/b&gt;, &lt;b&gt;8B&lt;/b&gt; etc. in dumped data on stack correspond to &lt;b&gt;jmp&lt;/b&gt;, &lt;b&gt;push&lt;/b&gt; and &lt;b&gt;mov&lt;/b&gt; instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as &lt;b&gt;stack strings&lt;/b&gt; right before VirtualProtect call and list of arguments are pushed as shown in the figure below&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/shellcode_stack_strings.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;following few statements are preparing to execute shellcode on stack by retrieving a handle to a dummy device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack&lt;/p&gt;
+&lt;p&gt;following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack (ptr value in eax taken from Figure1)&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/shellcode_exec.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;let’s now start digging into the shellcode.&lt;/p&gt;
+&lt;p&gt;let’s now start exploring the shellcode.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Debugging shellcode to extract final payload&lt;/strong&gt;&lt;/p&gt;
 
@@ -48,7 +49,7 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/decrypt_buffer2.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;final buffer2 decrypted contents look as shown in figure below&lt;/p&gt;
+&lt;p&gt;figure below shows final buffer2 decrypted contents&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/encrypted_buffer2_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -64,11 +65,11 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/api_hash_resolve.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine &lt;b&gt;0x0BE9&lt;/b&gt; for decryption - this custom decryption scheme works by processing each byte from buffer3 using repitive neg, sun, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result gets stored in [ebp-1]&lt;/p&gt;
+&lt;p&gt;next few instructions write some junk data on stack followed by pushing pointer to buffer3 and total size of buffer3 contents (0x350C0) on stack and execute routine &lt;b&gt;0x0BE9&lt;/b&gt; for decryption - this custom decryption scheme works by processing each byte from buffer3 using repetitive neg, sub, add, sar, shl, not, or and xor set of instructions with hard-coded values in multiple layers, intermediate result is stored in [ebp-1]&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/routine_decrypt_buffer3.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;and final value gets overwritten to the corresponding buffer3 byte&lt;/p&gt;
+&lt;p&gt;and final value overwrites the corresponding buffer3 value at [eax] offset&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/buffer3_contents_in_decryption.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -80,19 +81,19 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/poc_hashing_algorithm.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;after all required APIs have been resolved, next step is to create a new process&lt;/p&gt;
+&lt;p&gt;after all required APIs have been resolved, it proceeds to create a new process&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/createProcess.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;the new process is created using &lt;b&gt;CreateProcessW&lt;/b&gt; in suspended mode&lt;/p&gt;
+&lt;p&gt;using &lt;b&gt;CreateProcessW&lt;/b&gt; in suspended mode&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/process_created_in_suspended_mode.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;and then eventually final payload is injected into newly created process using SetThreadCOntext API, &lt;b&gt;CONTEXT&lt;/b&gt; structure for remote thread is set up with ContextFlag and required memory buffers and &lt;b&gt;SetThreadContext&lt;/b&gt; API is called with current thread handle and remote thread CONTEXT strure for code injection&lt;/p&gt;
+&lt;p&gt;and then final payload is injected into newly created process using SetThreadCOntext API, &lt;b&gt;CONTEXT&lt;/b&gt; structure for remote thread is set up with ContextFlag and required memory buffers and &lt;b&gt;SetThreadContext&lt;/b&gt; API is called with current thread handle and remote thread CONTEXT strure for code injection&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/final_injected_payload.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;main process terminates right after launching this process, now it’s time to dump and analyze final payload.&lt;/p&gt;
+&lt;p&gt;main process terminates right after launching this process, we can now take a dump of this process to extract final payload.&lt;/p&gt;
 
 &lt;p&gt;That’s it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.&lt;/p&gt;</content><author><name></name></author><category term="Infostealers" /><summary type="html">Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</summary></entry><entry><title type="html">Netwalker: from Powershell reflective loader to injected dll</title><link href="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/" rel="alternate" type="text/html" title="Netwalker: from Powershell reflective loader to injected dll" /><published>2022-02-11T00:00:00+05:00</published><updated>2022-02-11T00:00:00+05:00</updated><id>/Netwalker-:-from-Powershell-reflective-loader-to-injected-Dll</id><content type="html" xml:base="/Netwalker-from-Powershell-reflective-loader-to-injected-Dll/">&lt;p&gt;Hi! I have lately started delving into maliious powershell payloads and came across a really intriguing powershell loader for “&lt;a href=&quot;https://labs.sentinelone.com/netwalker-ransomware-no-respite-no-english-required/&quot;&gt;Netwalker ransomware&lt;/a&gt;”, performing &lt;a href=&quot;https://www.trendmicro.com/vinfo/us/security/news/cybercrime-and-digital-threats/security-101-how-fileless-attacks-work-and-persist-in-systems&quot;&gt;fileless attack&lt;/a&gt;. Fileless techniques enable attackers to directly load and execute malicious binary in memory without actually storing it on disk by abusing available legitimate tools on victim machine. Such threats leave no trace of execution and are capable of evading any traditional security tools. This post thoroughly discusses how first stage powershell script filelessly loads and executes embedded payload through reflective Dll injection.&lt;/p&gt;
 
