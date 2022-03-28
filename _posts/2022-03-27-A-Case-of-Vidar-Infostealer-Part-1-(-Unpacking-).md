@@ -63,11 +63,11 @@ this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into 
 ![image](/assets/images/vidar_packed/buffer3_.png){:class="img-responsive"}
 
 
-loop in following figure is decrypting data copied to buffer2 and pushing the address of this buffer on stack to execute its contents in next call
+loop in the following figure is decrypting data copied to buffer2, next push instruction is pushing the buffer3 pointer on stack as an argument of the routine being called from buffer2 address in edx which is supposed to process buffer3 contents
 
 ![image](/assets/images/vidar_packed/decrypt_buffer2.png){:class="img-responsive"}
 
-figure below shows final buffer2 decrypted contents 
+figure below is showing final buffer2 decrypted contents 
 
 ![image](/assets/images/vidar_packed/encrypted_buffer2_.png){:class="img-responsive"}
 
