@@ -25,7 +25,7 @@ Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, be
 ![image](/assets/images/vidar_packed/virtualprotect.png){:class="img-responsive"}
 *Figure1*
 
-first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below
+first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below
 
 ![image](/assets/images/vidar_packed/shellcode_stack_strings.png){:class="img-responsive"}
 
@@ -45,7 +45,7 @@ As soon as, <b>GrayStringA</b> executes, it hits on <b>VirtualAlloc</b> breakpoi
 ![image](/assets/images/vidar_packed/virtualalloc_.png){:class="img-responsive"}
 
 
-returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b> 
+returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and the file handle for currently loaded process on stack to call <b>ReadFile</b> 
 
 ![image](/assets/images/vidar_packed/readfile_handle.png){:class="img-responsive"}
 
@@ -54,11 +54,11 @@ which reads 0xAA3CE bytes of data from parent process image into the buffer, let
 ![image](/assets/images/vidar_packed/buffer1.png){:class="img-responsive"}
 
 
-further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I'll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button one more time, it'll stop at the code shown in the figure below
+further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I'll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button once more will break at instruction shown in the figure below
 
 ![image](/assets/images/vidar_packed/copy_loop.png){:class="img-responsive"}
 
-this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian call VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3
+this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian calling VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3
 
 ![image](/assets/images/vidar_packed/buffer3_.png){:class="img-responsive"}
 
@@ -75,11 +75,11 @@ stepping into <b>edx</b> starts executing buffer2 contents, where it seems to pu
 
 ![image](/assets/images/vidar_packed/PEB_parsing.png){:class="img-responsive"}
 
-retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant shows some public sandbox links but not clear what is this exactly about. Let's dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API's resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs
+retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant results in some public sandbox links but not clear what is this exactly about. Let's dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API's resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs
 
 ![image](/assets/images/vidar_packed/resolved.png){:class="img-responsive"}
 
-similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export function name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax
+similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax
 
 ![image](/assets/images/vidar_packed/api_hash_resolve.png){:class="img-responsive"}
 
@@ -107,7 +107,7 @@ using <b>CreateProcessW</b> in suspended mode
 
 ![image](/assets/images/vidar_packed/process_created_in_suspended_mode.png){:class="img-responsive"}
 
-and then final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection
+and then final payload is injected into newly created process using SetThreadContext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT structure for code injection
 
 ![image](/assets/images/vidar_packed/final_injected_payload.png){:class="img-responsive"}
 
