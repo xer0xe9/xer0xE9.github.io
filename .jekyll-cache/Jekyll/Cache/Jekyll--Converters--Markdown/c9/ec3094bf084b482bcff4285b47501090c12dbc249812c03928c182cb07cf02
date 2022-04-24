@@ -1,4 +1,4 @@
-I"�$<p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
+I"C%<p>Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my <b>BSides Islamabad 2021</b> talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.</p>
 
 <p><b>SHA256:</b> <a href="https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/">5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c</a></p>
 
@@ -11,17 +11,15 @@
 <p>Here we go, the first breakpoint hits in this case, is <b>VirtualProtect</b>, being called on a <b>stack</b> memory region of size <b>0x28A</b> to grant it <b>E</b>xecute <b>R</b>ead <b>W</b>rite (0x40) protection, strange enough right!</p>
 
 <p><img src="/assets/images/vidar_packed/virtualprotect.png" alt="image" class="img-responsive" />
-<em>Figure 1</em></p>
+<em>Figure1</em></p>
 
-<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
+<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
 
-<p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" />
-<em>Figure 2</em></p>
+<p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" /></p>
 
-<p>following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack</p>
+<p>following few statements are preparing to execute shellcode on stack by retrieving a handle to a device context (DC) object and passing this handle to GrayStringA to execute shellcode from stack (ptr value in eax taken from Figure1)</p>
 
-<p><img src="/assets/images/vidar_packed/shellcode_exec.png" alt="image" class="img-responsive" />
-Figure 3</p>
+<p><img src="/assets/images/vidar_packed/shellcode_exec.png" alt="image" class="img-responsive" /></p>
 
 <p>let’s now start exploring the shellcode.</p>
 
@@ -29,10 +27,9 @@ Figure 3</p>
 
 <p>As soon as, <b>GrayStringA</b> executes, it hits on <b>VirtualAlloc</b> breakpoint set in the debugger, which is being called to reserver/commit 0xAA3CE size of memory with <b>MEM_COMMIT | MEM_RESERVE</b> (0x3000) memory allocation type</p>
 
-<p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" />
-<em>Figure 4</em></p>
+<p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" /></p>
 
-<p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b></p>
+<p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and the file handle for currently loaded process on stack to call <b>ReadFile</b></p>
 
 <p><img src="/assets/images/vidar_packed/readfile_handle.png" alt="image" class="img-responsive" /></p>
 
@@ -40,19 +37,19 @@ Figure 3</p>
 
 <p><img src="/assets/images/vidar_packed/buffer1.png" alt="image" class="img-responsive" /></p>
 
-<p>further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button one more time, it’ll stop at the code shown in the figure below</p>
+<p>further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button once more will break at instruction shown in the figure below</p>
 
 <p><img src="/assets/images/vidar_packed/copy_loop.png" alt="image" class="img-responsive" /></p>
 
-<p>this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian call VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3</p>
+<p>this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian calling VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3</p>
 
 <p><img src="/assets/images/vidar_packed/buffer3_.png" alt="image" class="img-responsive" /></p>
 
-<p>loop in following figure is decrypting data copied to buffer2 and pushing the address of this buffer on stack to execute its contents in next call</p>
+<p>loop in the following figure is decrypting data copied to buffer2, next push instruction is pushing the buffer3 pointer on stack as an argument of the routine being called from buffer2 address in edx which is supposed to process buffer3 contents</p>
 
 <p><img src="/assets/images/vidar_packed/decrypt_buffer2.png" alt="image" class="img-responsive" /></p>
 
-<p>final buffer2 decrypted contents look as shown in figure below</p>
+<p>figure below is showing final buffer2 decrypted contents</p>
 
 <p><img src="/assets/images/vidar_packed/encrypted_buffer2_.png" alt="image" class="img-responsive" /></p>
 
@@ -60,11 +57,11 @@ Figure 3</p>
 
 <p><img src="/assets/images/vidar_packed/PEB_parsing.png" alt="image" class="img-responsive" /></p>
 
-<p>retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant shows some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs</p>
+<p>retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant results in some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs</p>
 
 <p><img src="/assets/images/vidar_packed/resolved.png" alt="image" class="img-responsive" /></p>
 
-<p>similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export function name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax</p>
+<p>similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax</p>
 
 <p><img src="/assets/images/vidar_packed/api_hash_resolve.png" alt="image" class="img-responsive" /></p>
 
@@ -92,7 +89,7 @@ Figure 3</p>
 
 <p><img src="/assets/images/vidar_packed/process_created_in_suspended_mode.png" alt="image" class="img-responsive" /></p>
 
-<p>and then final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection</p>
+<p>and then final payload is injected into newly created process using SetThreadContext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT structure for code injection</p>
 
 <p><img src="/assets/images/vidar_packed/final_injected_payload.png" alt="image" class="img-responsive" /></p>
 

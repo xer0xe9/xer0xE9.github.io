@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
 <script type="application/ld+json">
-{"mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-27T00:00:00+05:00","datePublished":"2022-03-27T00:00:00+05:00","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@type":"BlogPosting","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-27T00:00:00+05:00","datePublished":"2022-03-27T00:00:00+05:00","mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="0x00-0x7F blog" /></head>
 <body><header class="site-header" role="banner">
@@ -61,7 +61,7 @@
 <p><img src="/assets/images/vidar_packed/virtualprotect.png" alt="image" class="img-responsive" />
 <em>Figure1</em></p>
 
-<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> etc. in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
+<p>first few opcodes <b>E9</b>, <b>55</b>, <b>8B</b> in dumped data on stack correspond to <b>jmp</b>, <b>push</b> and <b>mov</b> instructions respectively, so it can be assumed it is shellcode being pushed on stack and then granted Execute protection to later execute it, If I hit execute till return button on VirtualProtect and trace back from it into disassembler, I can see shellcode stored as <b>stack strings</b> right before VirtualProtect call and list of arguments are pushed as shown in the figure below</p>
 
 <p><img src="/assets/images/vidar_packed/shellcode_stack_strings.png" alt="image" class="img-responsive" /></p>
 
@@ -77,7 +77,7 @@
 
 <p><img src="/assets/images/vidar_packed/virtualalloc_.png" alt="image" class="img-responsive" /></p>
 
-<p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, Next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and a file handle on stack to call <b>ReadFile</b></p>
+<p>returning control from <b>VirtualAlloc</b> and stepping over one more time from ret, leads us to the shellcode, next few statements after VirtualAlloc call are pushing pointer to newly created buffer, size of the buffer and the file handle for currently loaded process on stack to call <b>ReadFile</b></p>
 
 <p><img src="/assets/images/vidar_packed/readfile_handle.png" alt="image" class="img-responsive" /></p>
 
@@ -85,11 +85,11 @@
 
 <p><img src="/assets/images/vidar_packed/buffer1.png" alt="image" class="img-responsive" /></p>
 
-<p>further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button one more time, it’ll stop at the code shown in the figure below</p>
+<p>further execution again hits at <b>VirtualAlloc</b> breakpoint, this time allocating <b>0x14F0</b> bytes of memory, I’ll now put a write breakpoint in the memory region reserved/committed by second VirtualAlloc API call to see what and how data gets dumped into second buffer, <b>buffer2</b>. Hitting Run button once more will break at instruction shown in the figure below</p>
 
 <p><img src="/assets/images/vidar_packed/copy_loop.png" alt="image" class="img-responsive" /></p>
 
-<p>this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian call VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3</p>
+<p>this loop is copying 0x14F0 bytes of data from a certain offset of buffer1 into buffer2, next few statements are agaian calling VirtualAlloc to allocate another 0x350DE bytes of memory say <b>buffer3</b>, pushing returned buffer address along with an offset from buffer1 on stack to copy 0x350DE bytes of data from buffer1 into buffer3</p>
 
 <p><img src="/assets/images/vidar_packed/buffer3_.png" alt="image" class="img-responsive" /></p>
 
@@ -105,11 +105,11 @@
 
 <p><img src="/assets/images/vidar_packed/PEB_parsing.png" alt="image" class="img-responsive" /></p>
 
-<p>retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant shows some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs</p>
+<p>retrieved kernel32.dll handle is passed to next call along with another argument with constant <b>FF7F721A</b> value, a quick Google search for this constant results in some public sandbox links but not clear what is this exactly about. Let’s dig into it further, stepping over this routine <b>0x0A4E</b> results in <b>GetModuleFileNameW</b> API’s resolved address from Kernel32.dll stored in eax which means this routine is meant to resolve hashed APIs</p>
 
 <p><img src="/assets/images/vidar_packed/resolved.png" alt="image" class="img-responsive" /></p>
 
-<p>similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export function name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax</p>
+<p>similarly second call resolves <b>7F91A078</b> hash value to <b>ExitProcess</b> API, wrapper routine <b>0x0A4E</b> iterates over library exports and routine <b>0x097A</b> is computing hash against input export name parameter. Shellcode seems to be using a custom algorithm to hash API, computed hash value is retuned back into <b>eax</b> which is compared to the input hash value stored at [ebp-4], if both hash values are equal, API is resolved and its address is stored in eax</p>
 
 <p><img src="/assets/images/vidar_packed/api_hash_resolve.png" alt="image" class="img-responsive" /></p>
 
@@ -137,7 +137,7 @@
 
 <p><img src="/assets/images/vidar_packed/process_created_in_suspended_mode.png" alt="image" class="img-responsive" /></p>
 
-<p>and then final payload is injected into newly created process using SetThreadCOntext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT strure for code injection</p>
+<p>and then final payload is injected into newly created process using SetThreadContext API, <b>CONTEXT</b> structure for remote thread is set up with ContextFlag and required memory buffers and <b>SetThreadContext</b> API is called with current thread handle and remote thread CONTEXT structure for code injection</p>
 
 <p><img src="/assets/images/vidar_packed/final_injected_payload.png" alt="image" class="img-responsive" /></p>
 
