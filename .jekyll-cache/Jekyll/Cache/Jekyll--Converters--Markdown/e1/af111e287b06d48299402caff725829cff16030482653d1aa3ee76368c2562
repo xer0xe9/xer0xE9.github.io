@@ -1,0 +1,3 @@
+I"Ç<p>Hi, welcome to the Part 2 of my Vidar infostealer analysis writeup. In <a href="https://0x00-0x7f.github.io/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">part 1</a> of this post, I covered detailed technical analysis of packed executable dropped by initial stager by extracting and exploring embedded shellcode which is unpacking and self-injecting final payload. This part focuses on detailed static analysis of final injected payload: unpacked Vidar infostealer, defying anti-analysis techniques employed by malware (string decryption, dynamically loading DLLs and resolving APIs), automating analysis and finally uncovering stealerâ€™s main functionality through deobfuscated/decrypted strings.</p>
+
+:ET
