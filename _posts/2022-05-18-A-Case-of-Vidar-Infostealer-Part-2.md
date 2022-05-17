@@ -125,7 +125,7 @@ the same routine also captures screenshots which is stored as "screenshot.jpg" i
 
 ![image](/assets/images/vidar/stolen_files_and_dirs.png){:class="img-responsive"}
 
-immidiately after that a zip file with "_8294024645.zip" name format is created and stolen contents from working directory are compressed
+immidiately after that a zip file with "_8294024645.zip" name format is created and stolen contents from working directory are compressed (file is compressed using Zip2 encryption algorithm as identified by KANAL)
 
 ![image](/assets/images/vidar/compressed_zip_file.png){:class="img-responsive"}
 
@@ -137,7 +137,7 @@ after exiting from recursive grabber module, it deletes downloaded DLLs and file
 
 ![image](/assets/images/vidar/delete_files_.png){:class="img-responsive"}
 
-eventually it prepares a command <b>"/c taskkill /pid PID & erase EXECUTABLE_PATH & RD /S /Q WORKING_DIRECTORY_PATH\* & exit"</b> which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process.
+eventually it prepares a command <b>"/c taskkill /pid PID & erase EXECUTABLE_PATH & RD /S /Q WORKING_DIRECTORY_PATH\\* & exit"</b> which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process.
 
 That's it for Vidar infostealer's in-depth static analysis and analysis automation! see you soon in another blogpost.
 
