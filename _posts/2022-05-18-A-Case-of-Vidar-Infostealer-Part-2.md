@@ -89,11 +89,11 @@ where 0x43F corresponds to Kazakhstan, 0x443 to Uzbekistan, 0x82C to Azerbaijan 
 
 ![image](/assets/images/vidar/anti-emulation_check.png){:class="img-responsive"}
 
-once all required checks are passed, <b>sub_420BE0</b> routine is called
+once all required checks are passed, <b>sub_420BE0</b> routine is called which consists of stealer's grabbing module, it rst prepares urls and destination path strings where downloaded dlls from C2 servers are to be stored before performing any other activity
 
 ![image](/assets/images/vidar/download_code_.png){:class="img-responsive"}
 
-which consists of stealer's grabbing module, it first prepares urls and destination path strings where downloaded dlls from C2 servers are to be stored, it downloads <b>7</b> dlls under <b>C:\Programdata\</b>
+and then downloads <b>7</b> dlls under <b>C:\Programdata\</b>
 
 ![image](/assets/images/vidar/urls.png){:class="img-responsive"}
 
