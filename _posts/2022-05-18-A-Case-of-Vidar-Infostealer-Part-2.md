@@ -13,7 +13,7 @@ Hi, welcome to the Part 2 of my Vidar infostealer analysis writeup. In [part 1][
 <STRONG>Vidar in a Nutshell</STRONG>
 
 The Vidar Stealer is popular stealer written in C++ and has been active since October 2018 and seen in numerous different campaigns. It has been utilized by the threat actors behind GandCrab to use Vidar infostealer in the process for distributing the ransomware as second stage payload, which helps increasing their profits. The family is quite flexible in its operations as it can be configured to grab specific information dynamically. It fetches its configuration
-from C2 server at runtime which dictates what features are activated and which information is gathered and exfiltrated from victim machine. It also downloads several benign supporting dlls (freebl3.dll, mozglue.dll, msvcp140.dll and nss3.dll) to process encrypted data from browsers such as email credentials, chat account details, web-browsing cookies, etc., compresses everything into a ZIP archive, and then exfiltrates the archive to the attackers via an HTTP POST request. Once this is done, it kills its own process and deletes the downloaded DLLs and the main executable in an attempt to wipe all evidence of its presence from the victim’s machine.
+from C2 server at runtime which dictates what features are activated and which information is gathered and exfiltrated from victim machine. It also downloads several benign supporting dlls (freebl3.dll, mozglue.dll, msvcp140.dll and nss3.dll) to process encrypted data from browsers such as email credentials, chat account details, web-browsing cookies, etc., compresses everything into a ZIP archive, and then exfiltrates the archive to the attackers via an HTTP POST request. Once this is done, it kills its own process and deletes downloaded DLLs, working directory contants and main executable in an attempt to wipe all evidence of its presence from the victim’s machine.
 
 <STRONG>Technical Analysis</STRONG>
 
@@ -57,7 +57,7 @@ string decryption can be confirmed by following Cyberchef recipe
 
 ![image](/assets/images/vidar/cyberchef_RC4_decrypt.png){:class="img-responsive"}
 
-decompiled version of <b>decrypt_strings</b> routine sums up all steps described above
+decompiled version of <b>decrypt_strings</b> routine sums up all the steps described above
 
 ![image](/assets/images/vidar/decompiled_decrypt_strings_routine.png){:class="img-responsive"}
 
@@ -69,11 +69,11 @@ in the figure above, routine <b>sub_4196D0</b> is parsing PEB structure to get b
 
 ![image](/assets/images/vidar/calls.png){:class="img-responsive"}
 
-where <b>sub_4195A0</b> is parsing kernel32.dll's header by navigating from IMAGE_DOS_HEADER -> IMAGE_NT_HEADER -> IMAGE_OPTIONAL_HEADER.DATA_DIRECTORY -> IMAGE_EXPORT_DIRECTORY.AddressOfNames to retrieve export name and compare it with value of API contained by variable which in this case is LoadLibraryA
+where <b>sub_4195A0</b> is parsing kernel32.dll's header by navigating from IMAGE_DOS_HEADER -> IMAGE_NT_HEADER -> IMAGE_OPTIONAL_HEADER.DATA_DIRECTORY -> IMAGE_EXPORT_DIRECTORY.AddressOfNames to retrieve export name and compare it with value of API contained by input parameter value which in this case is LoadLibraryA
 
 ![image](/assets/images/vidar/parse_PE_hdr.png){:class="img-responsive"}
 
-if both strings match, it returns API's address by accessing value of IMAGE_EXPORT_DIRECTORY.AddressOfFunctions field, resolved address is stored in <b>dword_432898</b> variable while second call to <b>sub_4195A0</b> resolves GetProcAddress, stores resolved address to <b>dword_43280C</b> which is subsequently used to resolve rest of API functions at runtime. I wrote an IDAPython script [here][here] which is first decrypting strings from <b>wrap_decrypt_strings</b>, resolving APIs from <b>sub_419700</b> routine, adding comments and giving meaningful names to global variables storing resolved APIs to properly understand code flow and its functionality. decrypt_strings routine from IDAPython script is finding key, locating ~400 base64 encoded encrypted strings, base64 decoding strings and using key to decrypt base64 decoded hex strings, adding decrypted strings as comments and renaming variables as shown in figure below
+if both strings match, it returns API's address by accessing value of IMAGE_EXPORT_DIRECTORY.AddressOfFunctions field, resolved address is stored in <b>dword_432898</b> variable while second call to <b>sub_4195A0</b> resolves GetProcAddress, stores resolved address to <b>dword_43280C</b> which is subsequently used to resolve rest of API functions at runtime. I wrote an IDAPython script [here][here] which is first decrypting strings from <b>wrap_decrypt_strings</b>, resolving APIs from <b>sub_419700</b> routine, adding comments and giving meaningful names to global variables storing resolved APIs to properly understand code flow and its functionality. <b>decrypt_strings</b> routine from IDAPython script is finding key, locating ~400 base64 encoded encrypted strings, base64 decoding strings and using key to decrypt base64 decoded hex strings, adding decrypted strings as comments and renaming variables as shown in figure below
 
 ![image](/assets/images/vidar/wrap_decrypt_strings_w_comments.png){:class="img-responsive"}
 
@@ -89,15 +89,15 @@ where 0x43F corresponds to Kazakhstan, 0x443 to Uzbekistan, 0x82C to Azerbaijan 
 
 ![image](/assets/images/vidar/anti-emulation_check.png){:class="img-responsive"}
 
-once all required checks are passed, <b>sub_420BE0</b> routine is called which consists of stealer's grabbing module, it prepares urls and destination path strings where downloaded dlls from C2 servers are to be stored before performing any other activity
+once all required checks are passed, <b>sub_420BE0</b> routine is called which consists of stealer's grabbing module, it prepares urls and destination path strings where downloaded dlls from C2 server are to be stored before performing any other activity
 
 ![image](/assets/images/vidar/download_code_.png){:class="img-responsive"}
 
-and then downloads <b>7</b> dlls under <b>C:\Programdata\\</b>
+it downloads <b>7</b> dlls under <b>C:\Programdata\\</b>
 
 ![image](/assets/images/vidar/urls.png){:class="img-responsive"}
 
-next it creates its working directory under <b>C:\Programdata</b>, name of directory is randomly generated 15 digit string like <b>C:\ProgramData\920304972255009</b> where it further creates four sub-directories (autofill, cc, cookies and crypto) which are required to be created to store stolen data from browser, outlook, crypto currency wallets and system information gathering modules 
+next it creates its working directory under <b>C:\Programdata</b>, name of directory is randomly generated 15 digit string like <b>C:\ProgramData\920304972255009</b> where it further creates four sub-directories (autofill, cc, cookies and crypto) which are required to be created to store stolen data from browser, outlook, cryptocurrency wallets and system information gathering modules 
 
 ![image](/assets/images/vidar/steal_data_.png){:class="img-responsive"}
 
@@ -113,7 +113,7 @@ later it scans for .wallet, .seco, .passphrase and .keystore files for <b>~30</b
 
 ![image](/assets/images/vidar/wallets_info.png){:class="img-responsive"}
 
-Vidar creates an HTTP POST request for C&C (http://himarkh.xyz/main.php) server in order to download configuration for grabber module at runtime, parses downloaded configuration and proceeds to gather host, hardware and installed software related info
+Vidar creates an HTTP POST request for C&C (http://himarkh.xyz/main.php) server in order to download configuration for grabbing module at runtime, parses downloaded configuration and proceeds to gather host, hardware and installed software related info
 
 ![image](/assets/images/vidar/system_info.png){:class="img-responsive"}
 
@@ -133,11 +133,11 @@ the compressed file is now ready to be exfiltrated to its C&C server in another 
 
 ![image](/assets/images/vidar/create_zip_file.png){:class="img-responsive"}
 
-after exiting from recursive grabber module, it deletes downloaded DLLs and files fcreated in working directory being used to dump stolen data and information in order to remove its traces from victim machine
+after exiting from recursive grabbing module, it deletes downloaded DLLs and files created in working directory being used to dump stolen data and information in order to remove its traces from victim machine
 
 ![image](/assets/images/vidar/delete_files_.png){:class="img-responsive"}
 
-eventually it prepares a command <b>"/c taskkill /pid PID & erase EXECUTABLE_PATH & RD /S /Q WORKING_DIRECTORY_PATH\\* & exit"</b> which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process.
+eventually it prepares a command <b>"/c taskkill /pid PID & erase EXECUTABLE_PATH & RD /S /Q WORKING_DIRECTORY_PATH\\* & exit"</b> which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process and the process itself.
 
 That's it for Vidar infostealer's in-depth static analysis and analysis automation! see you soon in another blogpost.
 
