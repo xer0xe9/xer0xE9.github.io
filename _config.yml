@@ -18,7 +18,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: 0x00-0x7F blog
+title: xer0xE9 blog
 description: Malware Analyst and Reverse Engineer
 # avatar: https://avatars1.githubusercontent.com/u/5043463?s=80&v=4
 

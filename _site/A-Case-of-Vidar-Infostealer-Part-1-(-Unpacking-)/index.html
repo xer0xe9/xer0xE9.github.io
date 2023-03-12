@@ -3,24 +3,24 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
-<title>A Case of Vidar Infostealer - Part 1 (Unpacking) | 0x00-0x7F blog</title>
+<title>A Case of Vidar Infostealer - Part 1 (Unpacking) | xer0xE9 blog</title>
 <meta name="generator" content="Jekyll v4.2.0" />
 <meta property="og:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2." />
 <meta property="og:description" content="Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2." />
-<meta property="og:site_name" content="0x00-0x7F blog" />
+<meta property="og:site_name" content="xer0xE9 blog" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2022-03-27T00:00:00+05:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="A Case of Vidar Infostealer - Part 1 (Unpacking)" />
 <script type="application/ld+json">
-{"@type":"BlogPosting","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-27T00:00:00+05:00","datePublished":"2022-03-27T00:00:00+05:00","mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@context":"https://schema.org"}</script>
+{"@type":"BlogPosting","headline":"A Case of Vidar Infostealer - Part 1 (Unpacking)","dateModified":"2022-03-27T00:00:00+05:00","datePublished":"2022-03-27T00:00:00+05:00","url":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/","mainEntityOfPage":{"@type":"WebPage","@id":"/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/"},"description":"Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my BSides Islamabad 2021 talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
-<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="0x00-0x7F blog" /></head>
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="/feed.xml" title="xer0xE9 blog" /></head>
 <body><header class="site-header" role="banner">
 
-  <div class="wrapper"><a class="site-title" rel="author" href="/">0x00-0x7F blog</a><nav class="site-nav">
+  <div class="wrapper"><a class="site-title" rel="author" href="/">xer0xE9 blog</a><nav class="site-nav">
         <input type="checkbox" id="nav-trigger" class="nav-trigger" />
         <label for="nav-trigger">
           <span class="menu-icon">
@@ -125,7 +125,7 @@
 
 <p><img src="/assets/images/vidar_packed/more_api_hashes.png" alt="image" class="img-responsive" /></p>
 
-<p>I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found <a href="https://github.com/0x00-0x7F/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py">here</a></p>
+<p>I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found <a href="https://github.com/xer0xE9/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py">here</a></p>
 
 <p><img src="/assets/images/vidar_packed/poc_hashing_algorithm.png" alt="image" class="img-responsive" /></p>
 

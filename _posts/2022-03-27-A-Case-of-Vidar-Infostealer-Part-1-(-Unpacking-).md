@@ -115,5 +115,5 @@ main process terminates right after launching this process, we can now take a du
 
 That's it for unpacking! see you soon in the next blogpost covering detailed analysis of Vidar infostealer.
 
-[here]:https://github.com/0x00-0x7F/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py
+[here]:https://github.com/xer0xE9/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py
 [link-to-download-packed-exe]:https://bazaar.abuse.ch/sample/5cd0759c1e566b6e74ef3f29a49a34a08ded2dc44408fccd41b5a9845573a34c/

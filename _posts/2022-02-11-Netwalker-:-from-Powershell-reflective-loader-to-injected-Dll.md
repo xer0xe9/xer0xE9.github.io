@@ -232,4 +232,4 @@ That's it. See you next time.
 [link-to-download-ps1-loader]: https://bazaar.abuse.ch/download/f4656a9af30e98ed2103194f798fa00fd1686618e3e62fba6b15c9959135b7be/
 [md5-e17951ccd3f30ef2ecc7963628210a5e]: https://www.virustotal.com/gui/file/302ff75667460accbbd909275cf912f4543c4fb4ea9f0d0bad2f4d5e6225837b/detection
 [md5-f5c877335920f0ef040228e18b426d00]: https://www.virustotal.com/gui/file/f93209fccd0c452b8b5dc9db46341281344156bbedd23a47d2d551f80f460534/detection
-[here]: https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py
+[here]: https://github.com/xer0xE9/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py

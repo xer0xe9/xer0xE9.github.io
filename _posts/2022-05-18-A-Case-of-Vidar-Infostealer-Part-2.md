@@ -141,6 +141,6 @@ eventually it prepares a command <b>"/c taskkill /pid PID & erase EXECUTABLE_PAT
 
 That's it for Vidar infostealer's in-depth static analysis and analysis automation! see you soon in another blogpost.
 
-[here]:https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/Vidar/deobfuscate_resolve_Vidar.py
+[here]:https://github.com/xer0xE9/IDAPython_scripts/blob/master/Vidar/deobfuscate_resolve_Vidar.py
 [link-to-download-unpacked-exe]:https://bazaar.abuse.ch/sample/fca48ccbf3db60291b49f2290317b4919007dcc4fb943c1136eb70cf998260a5/
-[link-to-part-1]:https://0x00-0x7f.github.io/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/
+[link-to-part-1]:https://xer0xE9.github.io/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/

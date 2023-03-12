@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-05-18T04:35:10+05:00</updated><id>/feed.xml</id><title type="html">0x00-0x7F blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">A Case of Vidar Infostealer - Part 2</title><link href="/A-Case-of-Vidar-Infostealer-Part-2/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 2" /><published>2022-05-18T00:00:00+05:00</published><updated>2022-05-18T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-2</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-2/">&lt;p&gt;Hi, welcome to the Part 2 of my Vidar infostealer analysis writeup. In &lt;a href=&quot;https://0x00-0x7f.github.io/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/&quot;&gt;part 1&lt;/a&gt; of this post, I covered detailed technical analysis of packed executable dropped by initial stager by extracting and exploring embedded shellcode which is unpacking and self-injecting final payload. This part focuses on detailed static analysis of final injected payload: unpacked Vidar infostealer, defying anti-analysis techniques employed by malware (string decryption, dynamically loading DLLs and resolving APIs), automating analysis and finally uncovering stealer’s main functionality through deobfuscated/decrypted strings.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2023-03-13T03:31:58+05:00</updated><id>/feed.xml</id><title type="html">xer0xE9 blog</title><subtitle>Malware Analyst and Reverse Engineer</subtitle><entry><title type="html">A Case of Vidar Infostealer - Part 2</title><link href="/A-Case-of-Vidar-Infostealer-Part-2/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 2" /><published>2022-05-18T00:00:00+05:00</published><updated>2022-05-18T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-2</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-2/">&lt;p&gt;Hi, welcome to the Part 2 of my Vidar infostealer analysis writeup. In &lt;a href=&quot;https://xer0xE9.github.io/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/&quot;&gt;part 1&lt;/a&gt; of this post, I covered detailed technical analysis of packed executable dropped by initial stager by extracting and exploring embedded shellcode which is unpacking and self-injecting final payload. This part focuses on detailed static analysis of final injected payload: unpacked Vidar infostealer, defying anti-analysis techniques employed by malware (string decryption, dynamically loading DLLs and resolving APIs), automating analysis and finally uncovering stealer’s main functionality through deobfuscated/decrypted strings.&lt;/p&gt;
 
 &lt;p&gt;&lt;b&gt;SHA256:&lt;/b&gt; &lt;a href=&quot;https://bazaar.abuse.ch/sample/fca48ccbf3db60291b49f2290317b4919007dcc4fb943c1136eb70cf998260a5/&quot;&gt;fca48ccbf3db60291b49f2290317b4919007dcc4fb943c1136eb70cf998260a5&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Vidar in a Nutshell&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;The Vidar Stealer is popular stealer written in C++ and has been active since October 2018 and seen in numerous different campaigns. It has been utilized by the threat actors behind GandCrab to use Vidar infostealer in the process for distributing the ransomware as second stage payload, which helps increasing their profits. The family is quite flexible in its operations as it can be configured to grab specific information dynamically. It fetches its configuration
-from C2 server at runtime which dictates what features are activated and which information is gathered and exfiltrated from victim machine. It also downloads several benign supporting dlls (freebl3.dll, mozglue.dll, msvcp140.dll and nss3.dll) to process encrypted data from browsers such as email credentials, chat account details, web-browsing cookies, etc., compresses everything into a ZIP archive, and then exfiltrates the archive to the attackers via an HTTP POST request. Once this is done, it kills its own process and deletes the downloaded DLLs and the main executable in an attempt to wipe all evidence of its presence from the victim’s machine.&lt;/p&gt;
+from C2 server at runtime which dictates what features are activated and which information is gathered and exfiltrated from victim machine. It also downloads several benign supporting dlls (freebl3.dll, mozglue.dll, msvcp140.dll and nss3.dll) to process encrypted data from browsers such as email credentials, chat account details, web-browsing cookies, etc., compresses everything into a ZIP archive, and then exfiltrates the archive to the attackers via an HTTP POST request. Once this is done, it kills its own process and deletes downloaded DLLs, working directory contents and main executable in an attempt to wipe all evidence of its presence from the victim’s machine.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Technical Analysis&lt;/strong&gt;&lt;/p&gt;
 
@@ -49,7 +49,7 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/cyberchef_RC4_decrypt.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;decompiled version of &lt;b&gt;decrypt_strings&lt;/b&gt; routine sums up all steps described above&lt;/p&gt;
+&lt;p&gt;decompiled version of &lt;b&gt;decrypt_strings&lt;/b&gt; routine sums up all the steps described above&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/decompiled_decrypt_strings_routine.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -61,11 +61,11 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/calls.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;where &lt;b&gt;sub_4195A0&lt;/b&gt; is parsing kernel32.dll’s header by navigating from IMAGE_DOS_HEADER -&amp;gt; IMAGE_NT_HEADER -&amp;gt; IMAGE_OPTIONAL_HEADER.DATA_DIRECTORY -&amp;gt; IMAGE_EXPORT_DIRECTORY.AddressOfNames to retrieve export name and compare it with value of API contained by variable which in this case is LoadLibraryA&lt;/p&gt;
+&lt;p&gt;where &lt;b&gt;sub_4195A0&lt;/b&gt; is parsing kernel32.dll’s header by navigating from IMAGE_DOS_HEADER -&amp;gt; IMAGE_NT_HEADER -&amp;gt; IMAGE_OPTIONAL_HEADER.DATA_DIRECTORY -&amp;gt; IMAGE_EXPORT_DIRECTORY.AddressOfNames to retrieve export name and compare it with value of API contained by input parameter value which in this case is LoadLibraryA&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/parse_PE_hdr.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;if both strings match, it returns API’s address by accessing value of IMAGE_EXPORT_DIRECTORY.AddressOfFunctions field, resolved address is stored in &lt;b&gt;dword_432898&lt;/b&gt; variable while second call to &lt;b&gt;sub_4195A0&lt;/b&gt; resolves GetProcAddress, stores resolved address to &lt;b&gt;dword_43280C&lt;/b&gt; which is subsequently used to resolve rest of API functions at runtime. I wrote an IDAPython script &lt;a href=&quot;https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/Vidar/deobfuscate_resolve_Vidar.py&quot;&gt;here&lt;/a&gt; which is first decrypting strings from &lt;b&gt;wrap_decrypt_strings&lt;/b&gt;, resolving APIs from &lt;b&gt;sub_419700&lt;/b&gt; routine, adding comments and giving meaningful names to global variables storing resolved APIs to properly understand code flow and its functionality. decrypt_strings routine from IDAPython script is finding key, locating ~400 base64 encoded encrypted strings, base64 decoding strings and using key to decrypt base64 decoded hex strings, adding decrypted strings as comments and renaming variables as shown in figure below&lt;/p&gt;
+&lt;p&gt;if both strings match, it returns API’s address by accessing value of IMAGE_EXPORT_DIRECTORY.AddressOfFunctions field, resolved address is stored in &lt;b&gt;dword_432898&lt;/b&gt; variable while second call to &lt;b&gt;sub_4195A0&lt;/b&gt; resolves GetProcAddress, stores resolved address to &lt;b&gt;dword_43280C&lt;/b&gt; which is subsequently used to resolve rest of API functions at runtime. I wrote an IDAPython script &lt;a href=&quot;https://github.com/xer0xE9/IDAPython_scripts/blob/master/Vidar/deobfuscate_resolve_Vidar.py&quot;&gt;here&lt;/a&gt; which is first decrypting strings from &lt;b&gt;wrap_decrypt_strings&lt;/b&gt;, resolving APIs from &lt;b&gt;sub_419700&lt;/b&gt; routine, adding comments and giving meaningful names to global variables storing resolved APIs to properly understand code flow and its functionality. &lt;b&gt;decrypt_strings&lt;/b&gt; routine from IDAPython script is finding key, locating ~400 base64 encoded encrypted strings, base64 decoding strings and using key to decrypt base64 decoded hex strings, adding decrypted strings as comments and renaming variables as shown in figure below&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/wrap_decrypt_strings_w_comments.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -81,15 +81,15 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/anti-emulation_check.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;once all required checks are passed, &lt;b&gt;sub_420BE0&lt;/b&gt; routine is called&lt;/p&gt;
+&lt;p&gt;once all required checks are passed, &lt;b&gt;sub_420BE0&lt;/b&gt; routine is called which consists of stealer’s grabbing module, it prepares urls and destination path strings where downloaded dlls from C2 server are to be stored before performing any other activity&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/download_code_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;which consists of stealer’s grabbing module, it first prepares urls and destination path strings where downloaded dlls from C2 servers are to be stored, it downloads &lt;b&gt;7&lt;/b&gt; dlls under &lt;b&gt;C:\Programdata&amp;lt;/b&amp;gt;&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;it downloads &lt;b&gt;7&lt;/b&gt; dlls under &lt;b&gt;C:\Programdata\&lt;/b&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/urls.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;next it creates its working directory under &lt;b&gt;C:\Programdata&lt;/b&gt;, name of directory is randomly generated 15 digit string like &lt;b&gt;C:\ProgramData\920304972255009&lt;/b&gt; where it further creates four sub-directories (autofill, cc, cookies and crypto) which are required to be created to store stolen data from browser, outlook, crypto currency wallets and system information gathering modules&lt;/p&gt;
+&lt;p&gt;next it creates its working directory under &lt;b&gt;C:\Programdata&lt;/b&gt;, name of directory is randomly generated 15 digit string like &lt;b&gt;C:\ProgramData\920304972255009&lt;/b&gt; where it further creates four sub-directories (autofill, cc, cookies and crypto) which are required to be created to store stolen data from browser, outlook, cryptocurrency wallets and system information gathering modules&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/steal_data_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -105,7 +105,7 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/wallets_info.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;Vidar creates an HTTP POST request for C&amp;amp;C (http://himarkh.xyz/main.php) server in order to download configuration for grabber module at runtime, parses downloaded configuration and proceeds to gather host, hardware and installed software related info&lt;/p&gt;
+&lt;p&gt;Vidar creates an HTTP POST request for C&amp;amp;C (http://himarkh.xyz/main.php) server in order to download configuration for grabbing module at runtime, parses downloaded configuration and proceeds to gather host, hardware and installed software related info&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/system_info.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -125,11 +125,11 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/create_zip_file.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;after exiting from recursive grabber module, it deletes downloaded DLLs and files fcreated in working directory being used to dump stolen data and information in order to remove its traces from victim machine&lt;/p&gt;
+&lt;p&gt;after exiting from recursive grabbing module, it deletes downloaded DLLs and files created in working directory being used to dump stolen data and information in order to remove its traces from victim machine&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar/delete_files_.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;eventually it prepares a command &lt;b&gt;“/c taskkill /pid PID &amp;amp; erase EXECUTABLE_PATH &amp;amp; RD /S /Q WORKING_DIRECTORY_PATH\* &amp;amp; exit”&lt;/b&gt; which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process.&lt;/p&gt;
+&lt;p&gt;eventually it prepares a command &lt;b&gt;“/c taskkill /pid PID &amp;amp; erase EXECUTABLE_PATH &amp;amp; RD /S /Q WORKING_DIRECTORY_PATH\* &amp;amp; exit”&lt;/b&gt; which gets executed using cmd.exe to kill the running infostealer process and to delete remaining directories created by this process and the process itself.&lt;/p&gt;
 
 &lt;p&gt;That’s it for Vidar infostealer’s in-depth static analysis and analysis automation! see you soon in another blogpost.&lt;/p&gt;</content><author><name></name></author><category term="Infostealers" /><summary type="html">Hi, welcome to the Part 2 of my Vidar infostealer analysis writeup. In part 1 of this post, I covered detailed technical analysis of packed executable dropped by initial stager by extracting and exploring embedded shellcode which is unpacking and self-injecting final payload. This part focuses on detailed static analysis of final injected payload: unpacked Vidar infostealer, defying anti-analysis techniques employed by malware (string decryption, dynamically loading DLLs and resolving APIs), automating analysis and finally uncovering stealer’s main functionality through deobfuscated/decrypted strings.</summary></entry><entry><title type="html">A Case of Vidar Infostealer - Part 1 (Unpacking)</title><link href="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/" rel="alternate" type="text/html" title="A Case of Vidar Infostealer - Part 1 (Unpacking)" /><published>2022-03-27T00:00:00+05:00</published><updated>2022-03-27T00:00:00+05:00</updated><id>/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)</id><content type="html" xml:base="/A-Case-of-Vidar-Infostealer-Part-1-(-Unpacking-)/">&lt;p&gt;Hi, in this post, I’ll be unpacking and analyzing Vidar infostealer from my &lt;b&gt;BSides Islamabad 2021&lt;/b&gt; talk. Initial stage sample comes as .xll file which is Excel Add-in file extension. It allows third party applications to add extra functionality to Excel using Excel-DNA, a tool or library that is used to write .NET Excel add-ins. In this case, xll file embeds malicious downloader dll which further drops packed Vidar infostealer executable on victim machine, investigating whole infection chain is out of scope for this post, however I’ll be digging deep the dropped executable (Packed Vidar) in Part1 of this blogpost and final infostealer payload in Part2.&lt;/p&gt;
 
@@ -210,7 +210,7 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/more_api_hashes.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found &lt;a href=&quot;https://github.com/0x00-0x7F/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;I wrote a simple POC python script for hashing algorithm implemented by decrypted shellcode which can be found &lt;a href=&quot;https://github.com/xer0xE9/RE_tips_and_tricks/blob/master/vidar_packer/api_hash_strings.py&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/vidar_packed/poc_hashing_algorithm.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
@@ -411,7 +411,7 @@ from C2 server at runtime which dictates what features are activated and which i
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/get_ntdll_handle.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries. I wrote a simple IDAPython script &lt;a href=&quot;https://github.com/0x00-0x7F/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py&quot;&gt;here&lt;/a&gt; which resolves CRC32 hashes and adds resolved value in comment&lt;/p&gt;
+&lt;p&gt;this routine decrypts and resolves serveral APIs from ntdll.dll, kernel32.dll, advapi32.dll, use32.dll, mpr.dll, shell32.dll, netapi32.dll, ole32.dll, oleaut32.dll and psapi.dll libraries. I wrote a simple IDAPython script &lt;a href=&quot;https://github.com/xer0xE9/IDAPython_scripts/blob/master/netwalker_crc32hash_resolver.py&quot;&gt;here&lt;/a&gt; which resolves CRC32 hashes and adds resolved value in comment&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/netwalker/resolved.png&quot; alt=&quot;image&quot; class=&quot;img-responsive&quot; /&gt;&lt;/p&gt;
 
